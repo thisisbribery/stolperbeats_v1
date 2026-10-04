@@ -37,7 +37,8 @@ p{margin:0 0 12px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
 
 /* module-style control panel */
-.panel{display:grid;grid-template-columns:1fr auto;gap:22px 32px;align-items:center}
+.panel{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"timing feel" "knob side" "readout readout";gap:18px 32px;align-items:center}
+#timingrow{grid-area:timing} #feelrow{grid-area:feel} .knob{grid-area:knob} .side{grid-area:side} .readout{grid-area:readout}
 .ctl-label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .knob{min-width:220px}
 .knob input{width:100%;margin:0;-webkit-appearance:none;appearance:none;background:transparent;height:28px;cursor:pointer}
@@ -103,10 +104,10 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 .ok{color:var(--ok)} .warn{color:var(--warn)}
 
 /* Feel: backlit buttons in the manual's colours */
-.tilerow{grid-column:1/-1}
-.feels{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.tilerow{min-width:0;align-self:start}
+.feels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .feel-item{display:flex;flex-direction:column;gap:7px;min-width:0}
-.lampbtn{width:100%;border-radius:6px;padding:11px 6px;font:inherit;font-size:14px;font-weight:800;letter-spacing:.14em;cursor:pointer;
+.lampbtn{width:100%;border-radius:6px;padding:7px 4px;font:inherit;font-size:12px;font-weight:800;letter-spacing:.12em;cursor:pointer;
   color:var(--muted);border:1px solid color-mix(in srgb,var(--lamp) 35%,var(--line));
   background:color-mix(in srgb,var(--lamp) 16%,var(--chip));
   box-shadow:inset 0 1px 4px rgba(0,0,0,.28);transition:background .3s ease,box-shadow .3s ease}
@@ -114,7 +115,7 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 .lampbtn[aria-pressed=true]{color:#141414;border-color:color-mix(in srgb,var(--lamp) 70%,#000);
   background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--lamp) 45%,#fff) 0%,var(--lamp) 60%,color-mix(in srgb,var(--lamp) 82%,#000) 100%);
   box-shadow:0 0 16px 1px color-mix(in srgb,var(--lamp) 55%,transparent),inset 0 0 10px rgba(255,255,255,.35)}
-.feel-desc{font-size:12.5px;line-height:1.35;color:var(--muted);height:2.7em;overflow:hidden;margin:0}
+.row-desc{margin:7px 0 0;font-size:12.5px;line-height:1.35;color:var(--muted);height:1.35em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tilerow .ctl-label{display:flex;gap:8px}
 .tilerow .bypass{margin-left:0}
 .tilerow.bypassed .feels{filter:grayscale(1);opacity:.4;transition:filter .9s ease,opacity .9s ease}
@@ -155,18 +156,16 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 .disclaimer{grid-column:1/-1;margin:4px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 
 @media (max-width:960px){
-  .panel{grid-template-columns:1fr}
-  .side{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:16px}
   .readout{grid-template-columns:170px 1fr 110px 110px}
 }
 @media (max-width:760px){
-  .panel{grid-template-columns:1fr}
+  .panel{grid-template-columns:1fr;grid-template-areas:"timing" "feel" "knob" "side" "readout"}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px 16px}
+  .row-desc{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;height:2.7em}
   .knob{min-width:0}
   .readout{grid-template-columns:1fr 1fr;gap:12px 16px}
   .ro-desc{grid-column:1/-1}
   .ro-desc .ro-v{-webkit-line-clamp:3;height:4.2em}
-  .feels{grid-template-columns:repeat(2,1fr)}
-  .feel-desc{height:4.05em}
   .prov{grid-template-columns:1fr}
   h1{font-size:25px}
   table{table-layout:fixed;font-size:13px}
@@ -190,6 +189,7 @@ td.late{color:var(--late)} td.early{color:var(--early)}
     <div class="tilerow" id="timingrow">
       <div class="ctl-label">Timing<span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
       <div class="feels" id="timing" role="group" aria-label="Timing"></div>
+      <p class="row-desc" id="timingDesc"></p>
     </div>
     <div class="knob" id="knob">
       <div class="ctl-label">Shuffle <span id="shufv" class="mono" style="color:var(--text)">3</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
@@ -207,6 +207,7 @@ td.late{color:var(--late)} td.early{color:var(--early)}
     <div class="tilerow" id="feelrow">
       <div class="ctl-label">Feel<span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
       <div class="feels" id="feels" role="group" aria-label="Feel"></div>
+      <p class="row-desc" id="feelDesc"></p>
     </div>
     <div class="readout" aria-live="polite">
       <div><span class="ro-k">Timing</span><span class="ro-v" id="roMode"></span></div>
@@ -560,6 +561,7 @@ function readout(){
 }
 
 function update(){
+  document.getElementById("timingDesc").textContent=TIMINGS.find(t=>t.key===state.timing).desc;
   document.getElementById("shufv").textContent=state.shuffle;
   document.querySelectorAll("#detents span").forEach((d,i)=>d.classList.toggle("on",i===state.shuffle));
   document.querySelectorAll("#timing .lampbtn").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.timing===state.timing)));
@@ -570,7 +572,7 @@ function update(){
 const tWrap=document.getElementById("timing");
 for(const t of TIMINGS){
   const item=document.createElement("div"); item.className="feel-item";
-  item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false">${t.key.toUpperCase()}</button><p class="feel-desc">${t.desc}</p>`;
+  item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false" title="${t.desc}">${t.key.toUpperCase()}</button>`;
   item.querySelector("button").addEventListener("click",()=>{ state.timing=t.key; update(); });
   tWrap.appendChild(item);
 }
@@ -589,11 +591,12 @@ document.getElementById("ab").addEventListener("click",e=>{
 const fWrap=document.getElementById("feels");
 FEELS.forEach((f,i)=>{
   const item=document.createElement("div"); item.className="feel-item";
-  item.innerHTML=`<button class="lampbtn" style="--lamp:${f.lamp}" aria-pressed="false">${f.key.toUpperCase()}</button><p class="feel-desc">${f.desc}</p>`;
+  item.innerHTML=`<button class="lampbtn" style="--lamp:${f.lamp}" aria-pressed="false" title="${f.desc}">${f.key.toUpperCase()}</button>`;
   item.querySelector("button").addEventListener("click",()=>{ state.feel=i; drawFeels(); retarget(); drawHalf(); });
   fWrap.appendChild(item);
 });
 function drawFeels(){
+  document.getElementById("feelDesc").textContent=FEELS[state.feel].desc;
   fWrap.querySelectorAll(".lampbtn").forEach((b,i)=>b.setAttribute("aria-pressed",String(i===state.feel)));
   tWrap.style.setProperty("--lamp",FEELS[state.feel].lamp);
 }
