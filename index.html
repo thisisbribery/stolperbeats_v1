@@ -192,8 +192,8 @@ td.late{color:var(--late)} td.early{color:var(--early)}
       <p class="row-desc" id="timingDesc"></p>
     </div>
     <div class="knob" id="knob">
-      <div class="ctl-label">Shuffle <span id="shufv" class="mono" style="color:var(--text)">3</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
-      <input id="shuffle" type="range" min="0" max="6" step="1" value="3" aria-label="Shuffle amount, 0 to 6">
+      <div class="ctl-label">Shuffle <span id="shufv" class="mono" style="color:var(--text)">0</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
+      <input id="shuffle" type="range" min="0" max="6" step="1" value="0" aria-label="Shuffle amount, 0 to 6">
       <div class="detents" id="detents"></div>
     </div>
     <div class="side">
@@ -333,7 +333,7 @@ function loadBeat(i){
   pattern={}; for(const L of LANES) pattern[L.key]=toArr(BEATS[i][L.key]);
 }
 loadBeat(0);
-const state={timing:"Trip",shuffle:3,bpm:90,straight:false,kit:"808",feel:0};
+const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0};
 
 // Firmware: running totals pos[k]=sum(len[0..k-1]); the first 8 replay each half bar.
 function positions(timing,s){
