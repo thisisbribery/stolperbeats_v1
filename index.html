@@ -1,29 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Stolperbeats Shuffle Map</title>
+<title>Stolperbeats Visualiser</title>
+<script>try{ if(localStorage.getItem("stolperbeats-shuffle-map:theme")==="light") document.documentElement.setAttribute("data-theme","light"); }catch(e){}</script>
 <style>
 :root{
   --bg:#f5f4f0;--panel:#ffffff;--text:#1a1a19;--muted:#68665f;--line:#dcd9d1;--grid:#e9e7e0;
   --beat:#9a978d;--slot:#c9c5ba;--ghost:#a9a69c;--late:#cf3426;--early:#2c67cf;--on:#1a1a19;
   --chip:#efede7;--accent:#cf3426;--accent-ink:#fff;--track:#e3e0d8;--ok:#2f8f4e;--warn:#b7791f;
-  --green:#1f9d55;--green-soft:#e3f4ea;--green-ink:#fff;--empty:#d6d3ca;
+  --orange:#e8590c;--green:#1f9d55;--green-soft:#e3f4ea;--green-ink:#fff;--empty:#d6d3ca;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#10100f;--panel:#1a1a18;--text:#ecebe6;--muted:#9c9a90;--line:#33322d;--grid:#262521;
     --beat:#76746b;--slot:#45443e;--ghost:#605e57;--late:#ff6a5c;--early:#6d9fff;--on:#ecebe6;
     --chip:#25241f;--accent:#ff5546;--accent-ink:#fff;--track:#2c2b27;--ok:#5ccf83;--warn:#e9b04f;
-    --green:#2fbf6b;--green-soft:#173524;--green-ink:#08140d;--empty:#3a3934;
+    --orange:#ff8a3d;--green:#2fbf6b;--green-soft:#173524;--green-ink:#08140d;--empty:#3a3934;
   }
 }
 :root[data-theme="dark"]{
   --bg:#10100f;--panel:#1a1a18;--text:#ecebe6;--muted:#9c9a90;--line:#33322d;--grid:#262521;
   --beat:#76746b;--slot:#45443e;--ghost:#605e57;--late:#ff6a5c;--early:#6d9fff;--on:#ecebe6;
   --chip:#25241f;--accent:#ff5546;--accent-ink:#fff;--track:#2c2b27;--ok:#5ccf83;--warn:#e9b04f;
-  --green:#2fbf6b;--green-soft:#173524;--green-ink:#08140d;--empty:#3a3934;
+  --orange:#ff8a3d;--green:#2fbf6b;--green-soft:#173524;--green-ink:#08140d;--empty:#3a3934;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif}
@@ -61,7 +62,7 @@ p{margin:0 0 12px}
 .seg button{border:0;background:transparent;color:var(--muted);padding:6px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed=true]{background:var(--text);color:var(--panel)}
-.kitlabel{font-size:14px;color:var(--muted)}
+.kitlabel{font-size:14px;color:var(--text);font-weight:600}
 
 /* readout: fixed geometry so switching Timing never moves the grid */
 .readout{grid-column:1/-1;display:grid;grid-template-columns:190px 1fr 120px 120px;gap:18px;border-top:1px solid var(--line);padding-top:14px}
@@ -87,6 +88,7 @@ p{margin:0 0 12px}
 
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .scroll svg{display:block;width:100%;min-width:680px;height:auto}
+#bar .mute:focus-visible rect{stroke:var(--accent);stroke-width:2}
 #bar{cursor:crosshair;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
@@ -102,6 +104,38 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 .prov li{margin-bottom:6px}
 .prov h3{font-size:14px;margin:0 0 8px}
 .ok{color:var(--ok)} .warn{color:var(--warn)}
+
+/* theme switch */
+.topbar{display:flex;justify-content:flex-end;margin:-12px 0 14px}
+.theme{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:5px 6px 5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.theme .track{position:relative;width:38px;height:22px;border-radius:999px;background:var(--chip);border:1px solid var(--line)}
+.theme .knobdot{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text);transition:transform .25s ease}
+:root[data-theme="light"] .theme .knobdot{transform:translateX(16px)}
+.theme svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+
+/* Hear straight: button eases to orange and breathes; the Shuffle control greys out over a soft orange glow */
+#ab{transition:background-color .9s ease,border-color .9s ease,color .9s ease}
+#ab[aria-pressed=true]{background:var(--orange);border-color:var(--orange);color:#fff;animation:abPulse 2.4s ease-in-out infinite}
+@keyframes abPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--orange) 45%,transparent)}50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--orange) 0%,transparent)}}
+.knob{position:relative}
+.knob>*{position:relative;z-index:1}
+.knob::before{content:"";position:absolute;inset:-10px -14px;border-radius:14px;z-index:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--orange) 30%,transparent),transparent 72%);transition:opacity .9s ease}
+.knob.bypassed::before{opacity:1;animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.45}50%{opacity:1}}
+.knob input,.knob .detents{transition:filter .9s ease,opacity .9s ease}
+.knob.bypassed input,.knob.bypassed .detents{filter:grayscale(1);opacity:.4}
+.bypass{color:var(--orange);font-weight:700;letter-spacing:.04em;opacity:0;transition:opacity .9s ease;margin-left:6px}
+.knob.bypassed .bypass{opacity:1}
+@media (prefers-reduced-motion:reduce){#ab[aria-pressed=true],.knob.bypassed::before{animation:none}}
+
+/* collapsible sources */
+.sources>summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px}
+.sources>summary::-webkit-details-marker{display:none}
+.sources .chev{width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s ease;flex:none;margin-right:2px}
+.sources[open] .chev{transform:rotate(45deg)}
+.sources .sum-sub{color:var(--muted);font-size:13px}
+.sources .prov{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
 
 @media (max-width:960px){
   .panel{grid-template-columns:auto 1fr}
@@ -125,16 +159,22 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 </head>
 <body>
 <main>
-  <h1>Stolperbeats shuffle, decoded</h1>
-  <p class="lede">Pick a Timing, turn the Shuffle control, and watch a bar of drums get pushed off the grid. All four Timings and all seven Shuffle settings come from the step tables in firmware 163, and every hit is placed the same way the module places it. Feel is Tight, so every track moves together. Stolperbeats only sends triggers, so the kits are synthesised stand-ins for the drum machines you would patch to its six trigger outs.</p>
+  <div class="topbar">
+    <button class="theme" id="theme" aria-label="Switch to light mode">
+      <span id="themeLabel">Dark</span>
+      <span class="track" aria-hidden="true"><span class="knobdot"></span></span>
+    </button>
+  </div>
+  <h1>Stolperbeats visualiser</h1>
+  <p class="lede">This tool is designed to help you see what your Stolperbeats is doing to the grid. It is for education: pick a Timing, turn the Shuffle control, and watch each hit get pushed off the straight 16th grid. All four Timings and all seven Shuffle settings come from the step tables in firmware 163, and every hit is placed the same way the module places it. Feel is set to Tight, so every track moves together.</p>
 
   <section class="card panel" aria-label="Controls">
     <div>
       <div class="ctl-label">Timing</div>
       <div class="timing" id="timing"></div>
     </div>
-    <div class="knob">
-      <div class="ctl-label">Shuffle <span id="shufv" class="mono" style="color:var(--text)">3</span></div>
+    <div class="knob" id="knob">
+      <div class="ctl-label">Shuffle <span id="shufv" class="mono" style="color:var(--text)">3</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
       <input id="shuffle" type="range" min="0" max="6" step="1" value="3" aria-label="Shuffle amount, 0 to 6">
       <div class="detents" id="detents"></div>
     </div>
@@ -144,7 +184,7 @@ td.late{color:var(--late)} td.early{color:var(--early)}
         <button class="btn" id="play" aria-pressed="false"><svg viewBox="0 0 10 10"><path id="playIcon" d="M2 1l7 4-7 4z"/></svg><span>Play</span></button>
         <button class="btn" id="ab" aria-pressed="false">Hear straight</button>
       </div>
-      <div class="row"><span class="kitlabel">Kit</span><div class="seg" id="kits" role="group" aria-label="Drum kit"></div></div>
+      <div class="row"><span class="kitlabel">Choose your kit</span><div class="seg" id="kits" role="group" aria-label="Drum kit"></div></div>
     </div>
     <div class="readout" aria-live="polite">
       <div><span class="ro-k">Timing</span><span class="ro-v" id="roMode"></span></div>
@@ -173,7 +213,7 @@ td.late{color:var(--late)} td.early{color:var(--early)}
       <span><i style="background:var(--early)"></i>pulled early</span>
       <span><i style="border:1.5px solid var(--ghost)"></i>where the straight 16th would be</span>
     </div>
-    <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Click a track name to mute it.</p>
+    <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it.</p>
   </section>
 
   <section class="card">
@@ -183,7 +223,9 @@ td.late{color:var(--late)} td.early{color:var(--early)}
     <table id="tbl"></table>
   </section>
 
-  <section class="card prov">
+  <details class="card sources">
+    <summary><span class="chev" aria-hidden="true"></span><span><b>Sources</b> <span class="sum-sub">· what's read from the firmware, and what's matched</span></span></summary>
+    <div class="prov">
     <div>
       <h3 class="ok">✓ Read from the firmware code</h3>
       <ul>
@@ -204,7 +246,8 @@ td.late{color:var(--late)} td.early{color:var(--early)}
         <li>The 808, 909 and 606 kits are synthesised approximations, not samples.</li>
       </ul>
     </div>
-  </section>
+  </div>
+  </details>
 </main>
 
 <script>
@@ -268,7 +311,7 @@ const css=v=>`var(--${v})`;
 const fmtMs=ms=>Math.abs(ms)<0.05?"0 ms":(ms>0?"+":"−")+Math.abs(ms).toFixed(1)+" ms";
 
 // ---------- bar view ----------
-const bar=document.getElementById("bar"), X0=78, X1=984, BX=f=>X0+(X1-X0)*f;
+const bar=document.getElementById("bar"), X0=122, X1=984, BX=f=>X0+(X1-X0)*f;
 const laneY={}, BOT=306; LANES.forEach((L,i)=>laneY[L.key]=94+i*40);
 const gSlots=el("g",{},bar), hits={};
 let hoverRing;
@@ -284,11 +327,16 @@ let hoverRing;
   el("line",{x1:X0,x2:X1,y1:60,y2:60,stroke:css("line"),"stroke-width":1},bar);
   for(const L of LANES){
     const y=laneY[L.key];
-    const lt=el("text",{x:6,y:y,fill:css("text"),"font-size":12,"font-weight":600,style:"cursor:pointer"},bar); lt.textContent=L.name;
-    const sub=el("text",{x:6,y:y+13,fill:css("muted"),"font-size":10,style:"cursor:pointer"},bar);
-    const tt=el("title",{},lt); tt.textContent="Click to mute";
-    for(const n of [lt,sub]) n.addEventListener("click",()=>{ muted[L.key]=!muted[L.key]; drawBar(); });
-    L.label=lt; L.sub=sub;
+    const lt=el("text",{x:6,y:y,fill:css("text"),"font-size":12,"font-weight":600},bar); lt.textContent=L.name;
+    const sub=el("text",{x:6,y:y+13,fill:css("muted"),"font-size":10},bar);
+    const mb=el("g",{class:"mute",role:"button",tabindex:0,"aria-pressed":"false","aria-label":`Mute ${L.name}`,style:"cursor:pointer"},bar);
+    const mtitle=el("title",{},mb); mtitle.textContent=`Mute ${L.name}`;
+    mb.rect=el("rect",{x:80,y:y-10,width:26,height:20,rx:5,"stroke-width":1.2},mb);
+    mb.txt=el("text",{x:93,y:y+4,"text-anchor":"middle","font-size":11,"font-weight":700},mb); mb.txt.textContent="M";
+    const toggleMute=()=>{ muted[L.key]=!muted[L.key]; drawBar(); };
+    mb.addEventListener("click",toggleMute);
+    mb.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleMute(); } });
+    L.label=lt; L.sub=sub; L.mute=mb;
     el("line",{x1:X0,x2:X1,y1:y,y2:y,stroke:css("grid"),"stroke-width":2},bar);
     hits[L.key]=[];
     for(let k=0;k<16;k++){
@@ -311,6 +359,11 @@ function drawBar(){
     L.label.setAttribute("text-decoration",muted[L.key]?"line-through":"none");
     L.label.setAttribute("opacity",muted[L.key]?.45:1);
     L.sub.textContent=muted[L.key]?"muted":KITS[state.kit][L.key];
+    const m=!!muted[L.key];
+    L.mute.setAttribute("aria-pressed",String(m));
+    L.mute.rect.setAttribute("fill",m?css("orange"):css("chip"));
+    L.mute.rect.setAttribute("stroke",m?css("orange"):css("line"));
+    L.mute.txt.setAttribute("fill",m?"#fff":css("muted"));
   }
   for(const L of LANES) for(let k=0;k<16;k++){
     const g=hits[L.key][k], on=pattern[L.key][k], f=shown[k], moved=Math.abs(f-k/16)>1e-6;
@@ -345,7 +398,7 @@ let paintValue=null, hoverCell=null;
 function svgPoint(e){ const p=bar.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(bar.getScreenCTM().inverse()); }
 function cellAt(e){
   const p=svgPoint(e), top=laneY[LANES[0].key]-24, bottom=laneY[LANES[LANES.length-1].key]+24;
-  if(p.x<X0-18||p.x>X1+16||p.y<top||p.y>bottom) return null;
+  if(p.x<X0-12||p.x>X1+16||p.y<top||p.y>bottom) return null;
   let lane=LANES[0]; for(const L of LANES) if(Math.abs(laneY[L.key]-p.y)<Math.abs(laneY[lane.key]-p.y)) lane=L;
   let k=0; for(let i=1;i<16;i++) if(Math.abs(BX(shown[i])-p.x)<Math.abs(BX(shown[k])-p.x)) k=i;
   return {lane:lane.key,k};
@@ -440,7 +493,23 @@ const det=document.getElementById("detents"), shuffleIn=document.getElementById(
 for(let i=0;i<7;i++){ const s=document.createElement("span"); s.textContent=i; s.addEventListener("click",()=>{ shuffleIn.value=i; state.shuffle=i; update(); }); det.appendChild(s); }
 shuffleIn.addEventListener("input",e=>{ state.shuffle=+e.target.value; update(); });
 document.getElementById("bpm").addEventListener("input",e=>{ state.bpm=+e.target.value; document.getElementById("bpmv").textContent=state.bpm+" bpm"; drawHalf(); readout(); });
-document.getElementById("ab").addEventListener("click",e=>{ state.straight=!state.straight; e.currentTarget.setAttribute("aria-pressed",String(state.straight)); retarget(); });
+document.getElementById("ab").addEventListener("click",e=>{
+  state.straight=!state.straight; e.currentTarget.setAttribute("aria-pressed",String(state.straight));
+  document.getElementById("knob").classList.toggle("bypassed",state.straight);
+  shuffleIn.setAttribute("aria-description",state.straight?"Bypassed: playing straight 16ths":"");
+  retarget();
+});
+const themeBtn=document.getElementById("theme");
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  document.getElementById("themeLabel").textContent=t==="dark"?"Dark":"Light";
+  themeBtn.setAttribute("aria-label",t==="dark"?"Switch to light mode":"Switch to dark mode");
+}
+applyTheme(document.documentElement.getAttribute("data-theme")==="light"?"light":"dark");
+themeBtn.addEventListener("click",()=>{
+  const t=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+  applyTheme(t); try{ localStorage.setItem("stolperbeats-shuffle-map:theme",t); }catch(e){}
+});
 
 const kWrap=document.getElementById("kits");
 for(const k of Object.keys(KITS)){ const b=document.createElement("button"); b.textContent=k; b.dataset.kit=k;
