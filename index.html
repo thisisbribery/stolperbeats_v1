@@ -37,11 +37,8 @@ p{margin:0 0 12px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
 
 /* module-style control panel */
-.panel{display:grid;grid-template-columns:auto 1fr auto;gap:22px 32px;align-items:center}
+.panel{display:grid;grid-template-columns:1fr auto;gap:22px 32px;align-items:center}
 .ctl-label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.timing{display:grid;grid-template-columns:repeat(4,auto);gap:8px}
-.tbtn{border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:8px;padding:9px 14px;font:inherit;font-weight:600;cursor:pointer;min-width:70px}
-.tbtn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
 .knob{min-width:220px}
 .knob input{width:100%;margin:0;-webkit-appearance:none;appearance:none;background:transparent;height:28px;cursor:pointer}
 .knob input::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--track)}
@@ -105,6 +102,25 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 .prov h3{font-size:14px;margin:0 0 8px}
 .ok{color:var(--ok)} .warn{color:var(--warn)}
 
+/* Feel: backlit buttons in the manual's colours */
+.tilerow{grid-column:1/-1}
+.feels{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.feel-item{display:flex;flex-direction:column;gap:7px;min-width:0}
+.lampbtn{width:100%;border-radius:6px;padding:11px 6px;font:inherit;font-size:14px;font-weight:800;letter-spacing:.14em;cursor:pointer;
+  color:var(--muted);border:1px solid color-mix(in srgb,var(--lamp) 35%,var(--line));
+  background:color-mix(in srgb,var(--lamp) 16%,var(--chip));
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.28);transition:background .3s ease,box-shadow .3s ease}
+.lampbtn:hover{background:color-mix(in srgb,var(--lamp) 26%,var(--chip))}
+.lampbtn[aria-pressed=true]{color:#141414;border-color:color-mix(in srgb,var(--lamp) 70%,#000);
+  background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--lamp) 45%,#fff) 0%,var(--lamp) 60%,color-mix(in srgb,var(--lamp) 82%,#000) 100%);
+  box-shadow:0 0 16px 1px color-mix(in srgb,var(--lamp) 55%,transparent),inset 0 0 10px rgba(255,255,255,.35)}
+.feel-desc{font-size:12.5px;line-height:1.35;color:var(--muted);height:2.7em;overflow:hidden;margin:0}
+.tilerow .ctl-label{display:flex;gap:8px}
+.tilerow .bypass{margin-left:0}
+.tilerow.bypassed .feels{filter:grayscale(1);opacity:.4;transition:filter .9s ease,opacity .9s ease}
+.tilerow.bypassed .bypass{opacity:1}
+.legend i.rolltick{width:3px;height:12px;border-radius:1px;background:var(--text);opacity:.6;vertical-align:-2px}
+
 /* theme switch */
 .topbar{display:flex;justify-content:flex-end;margin:-12px 0 14px}
 .theme{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:5px 6px 5px 12px;font:inherit;font-size:13px;cursor:pointer}
@@ -136,19 +152,21 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 .sources[open] .chev{transform:rotate(45deg)}
 .sources .sum-sub{color:var(--muted);font-size:13px}
 .sources .prov{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.disclaimer{grid-column:1/-1;margin:4px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
 
 @media (max-width:960px){
-  .panel{grid-template-columns:auto 1fr}
+  .panel{grid-template-columns:1fr}
   .side{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:center;gap:16px}
   .readout{grid-template-columns:170px 1fr 110px 110px}
 }
 @media (max-width:760px){
   .panel{grid-template-columns:1fr}
   .knob{min-width:0}
-  .timing{grid-template-columns:repeat(2,1fr)}
   .readout{grid-template-columns:1fr 1fr;gap:12px 16px}
   .ro-desc{grid-column:1/-1}
   .ro-desc .ro-v{-webkit-line-clamp:3;height:4.2em}
+  .feels{grid-template-columns:repeat(2,1fr)}
+  .feel-desc{height:4.05em}
   .prov{grid-template-columns:1fr}
   h1{font-size:25px}
   table{table-layout:fixed;font-size:13px}
@@ -166,12 +184,12 @@ td.late{color:var(--late)} td.early{color:var(--early)}
     </button>
   </div>
   <h1>Stolperbeats visualiser</h1>
-  <p class="lede">This tool is designed to help you see what your Stolperbeats is doing to the grid. It is for education: pick a Timing, turn the Shuffle control, and watch each hit get pushed off the straight 16th grid. All four Timings and all seven Shuffle settings come from the step tables in firmware 163, and every hit is placed the same way the module places it. Feel is set to Tight, so every track moves together.</p>
+  <p class="lede">This tool is designed to help you see what your Stolperbeats is doing to the grid. It is for education: pick a Timing, turn the Shuffle control, and watch each hit get pushed off the straight 16th grid. All four Timings and all seven Shuffle settings come from the step tables in firmware 163, and every hit is placed the same way the module places it. Pick a Feel to see how Rolls, Flam and Slop add detail on top of the shuffle.</p>
 
   <section class="card panel" aria-label="Controls">
-    <div>
-      <div class="ctl-label">Timing</div>
-      <div class="timing" id="timing"></div>
+    <div class="tilerow" id="timingrow">
+      <div class="ctl-label">Timing<span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
+      <div class="feels" id="timing" role="group" aria-label="Timing"></div>
     </div>
     <div class="knob" id="knob">
       <div class="ctl-label">Shuffle <span id="shufv" class="mono" style="color:var(--text)">3</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
@@ -185,6 +203,10 @@ td.late{color:var(--late)} td.early{color:var(--early)}
         <button class="btn" id="ab" aria-pressed="false">Hear straight</button>
       </div>
       <div class="row"><span class="kitlabel">Choose your kit</span><div class="seg" id="kits" role="group" aria-label="Drum kit"></div></div>
+    </div>
+    <div class="tilerow" id="feelrow">
+      <div class="ctl-label">Feel<span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
+      <div class="feels" id="feels" role="group" aria-label="Feel"></div>
     </div>
     <div class="readout" aria-live="polite">
       <div><span class="ro-k">Timing</span><span class="ro-v" id="roMode"></span></div>
@@ -212,6 +234,7 @@ td.late{color:var(--late)} td.early{color:var(--early)}
       <span><i style="background:var(--late)"></i>pushed late</span>
       <span><i style="background:var(--early)"></i>pulled early</span>
       <span><i style="border:1.5px solid var(--ghost)"></i>where the straight 16th would be</span>
+      <span><i class="rolltick"></i>ratchet retriggers (Rolls)</span>
     </div>
     <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it.</p>
   </section>
@@ -235,17 +258,22 @@ td.late{color:var(--late)} td.early{color:var(--early)}
         <li>At boot, step lengths become running totals (<span class="mono">0x0800D430</span>)</li>
         <li>Tick length = 60 × 48014 ÷ (bpm × ticks per beat) timer counts, which is exactly 1/N of a beat (<span class="mono">0x08003BB8</span>)</li>
         <li>A step fires when the tick counter equals its running total. The first 8 totals replay every half bar (<span class="mono">0x08010E58</span>)</li>
+        <li>FEEL is 0 to 3 (Tight, Rolls, Flam, Slop) at <span class="mono">0x2401738C</span>. The firing code runs on every tick, not just on steps</li>
+        <li>Flam fires Kick and Snare one tick after their step. Slop does the same for Kick, Snare, Hihat 1 and Hihat 2</li>
+        <li>Rolls retrigger Hihat 2 until the next step: on every tick for Shuffle 0 and 3, otherwise on every second tick (row mask <span class="mono">0x01224489</span>)</li>
       </ul>
     </div>
     <div>
       <h3 class="warn">≈ Matched, not traced in code</h3>
       <ul>
         <li>Which table belongs to which button. The four tables sit in button order and match the manual's descriptions: Trip's tuplet shapes, Push making time for the downbeat, and Clave's 3:3:2 holding still.</li>
-        <li>Tight feel applying the tables unchanged. The Feel code hasn't been traced.</li>
+        <li>Feel colours come from the manual. The firmware only switches one of four LEDs per button.</li>
+        <li>Trigger pulse length, and how the Feels appear on MIDI out, haven't been traced.</li>
         <li>Nothing here has been measured on the hardware yet.</li>
         <li>The 808, 909 and 606 kits are synthesised approximations, not samples.</li>
       </ul>
     </div>
+    <p class="disclaimer"><b>Disclaimer.</b> This is an unofficial, independent educational project. It is not affiliated with, endorsed by, or supported by Making Sound Machines. Stolperbeats is designed and made by <a href="https://makingsoundmachines.com/stolperbeats/" style="color:inherit">Making Sound Machines</a>, and all rights in the module and its firmware remain theirs. The timing tables used here were read from the publicly available firmware 163 purely to illustrate how the shuffle works. For anything official, see the Stolperbeats manual.</p>
   </div>
   </details>
 </main>
@@ -253,11 +281,20 @@ td.late{color:var(--late)} td.early{color:var(--early)}
 <script>
 const DATA = {"N": [16, 28, 36, 20, 24, 32, 36], "Trip": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4], [8, 12, 8, 8, 8, 12, 8, 8, 8, 12, 8, 8, 8, 12, 8, 2], [4, 8, 4, 4, 4, 8, 4, 4, 4, 8, 4, 4, 4, 8, 4, 1], [4, 12, 4, 4, 4, 12, 4, 4, 4, 12, 4, 4, 4, 12, 4, 1], [4, 16, 8, 4, 4, 16, 8, 4, 4, 16, 8, 4, 4, 16, 8, 1], [4, 20, 8, 4, 4, 20, 8, 4, 4, 20, 8, 4, 4, 20, 8, 1]], "Shake": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 6, 8, 6, 8, 6, 8, 6, 8, 6, 8, 6, 8, 6, 8, 6], [11, 7, 11, 7, 11, 7, 11, 7, 11, 7, 11, 7, 11, 7, 11, 7], [6, 4, 6, 4, 6, 4, 6, 4, 6, 4, 6, 4, 6, 4, 6, 4], [7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5], [10, 6, 10, 6, 10, 6, 10, 6, 10, 6, 10, 6, 10, 6, 10, 6], [12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6]], "Push": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 7, 7, 6, 8, 7, 7, 6, 8, 7, 7, 6, 8, 7, 7, 6], [10, 9, 9, 8, 10, 9, 9, 8, 10, 9, 9, 8, 10, 9, 9, 8], [6, 5, 5, 4, 6, 5, 5, 4, 6, 5, 5, 4, 6, 5, 5, 4], [7, 6, 6, 5, 7, 6, 6, 5, 7, 6, 6, 5, 7, 6, 6, 5], [10, 8, 8, 6, 10, 8, 8, 6, 10, 8, 8, 6, 10, 8, 8, 6], [11, 9, 9, 7, 11, 9, 9, 7, 11, 9, 9, 7, 11, 9, 9, 7]], "Clave": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 8, 5, 8, 8, 5, 8, 6, 8, 8, 5, 8, 8, 5, 8, 6], [10, 12, 5, 10, 12, 5, 10, 8, 10, 12, 5, 10, 12, 5, 10, 8], [6, 6, 3, 6, 6, 3, 6, 4, 6, 6, 3, 6, 6, 3, 6, 4], [8, 7, 3, 8, 7, 3, 8, 4, 8, 7, 3, 8, 7, 3, 8, 4], [9, 11, 4, 9, 11, 4, 8, 8, 9, 11, 4, 9, 11, 4, 8, 8], [11, 12, 4, 10, 13, 4, 10, 8, 11, 12, 4, 10, 13, 4, 10, 8]]};
 const TIMINGS=[
-  {key:"Trip", blurb:"n-tuplet grooves"},
-  {key:"Shake",blurb:"long-short swing"},
-  {key:"Push", blurb:"makes time for the downbeat"},
-  {key:"Clave",blurb:"3:3:2 holds, the rest swings"}
+  {key:"Trip", blurb:"n-tuplet grooves", desc:"Uneven tuplet grooves where steps trip over each other."},
+  {key:"Shake",blurb:"long-short swing", desc:"Classic long-short swing on every pair of 16ths."},
+  {key:"Push", blurb:"makes time for the downbeat", desc:"Steps lean late, making room for each downbeat."},
+  {key:"Clave",blurb:"3:3:2 holds, the rest swings", desc:"3:3:2 anchors hold while the other steps swing."}
 ];
+// Feel order is the firmware's FEEL value 0-3. Colours from the manual: orange, red, yellow, white.
+const FEELS=[
+  {key:"Tight",lamp:"#f39237",desc:"All six tracks shuffle together. No extra timing on top."},
+  {key:"Rolls",lamp:"#e8423a",desc:"Hihat 2 becomes a ratchet that retriggers until the next step."},
+  {key:"Flam", lamp:"#f5c542",desc:"Kick and Snare land one tick after their step."},
+  {key:"Slop", lamp:"#f4f1e6",desc:"Like Flam, but both hihats land one tick late too."}
+];
+const FEEL_DELAY={Flam:["BD","SD"],Slop:["BD","SD","H1","H2"]}; // tracks fired on (running total + 1)
+const ROLL_EVERY_TICK=0x01224489; // firmware row mask: rows that roll on every tick, the rest on even ticks
 // Six tracks in the module's order. Hihat 1 is closed, Hihat 2 is open (the manual's Linear priority lists HH2 as open).
 const LANES=[
   {key:"BD",name:"Kick",r:11},{key:"SD",name:"Snare",r:10},
@@ -295,7 +332,7 @@ function loadBeat(i){
   pattern={}; for(const L of LANES) pattern[L.key]=toArr(BEATS[i][L.key]);
 }
 loadBeat(0);
-const state={timing:"Trip",shuffle:3,bpm:90,straight:false,kit:"808"};
+const state={timing:"Trip",shuffle:3,bpm:90,straight:false,kit:"808",feel:0};
 
 // Firmware: running totals pos[k]=sum(len[0..k-1]); the first 8 replay each half bar.
 function positions(timing,s){
@@ -314,7 +351,7 @@ const fmtMs=ms=>Math.abs(ms)<0.05?"0 ms":(ms>0?"+":"−")+Math.abs(ms).toFixed(1
 const bar=document.getElementById("bar"), X0=122, X1=984, BX=f=>X0+(X1-X0)*f;
 const laneY={}, BOT=306; LANES.forEach((L,i)=>laneY[L.key]=94+i*40);
 const gSlots=el("g",{},bar), hits={};
-let hoverRing;
+let hoverRing, gRoll;
 (function buildBar(){
   for(let b=0;b<=4;b++){
     el("line",{x1:BX(b/4),x2:BX(b/4),y1:24,y2:BOT,stroke:css("beat"),"stroke-width":b%4?1:1.6},bar);
@@ -348,11 +385,43 @@ let hoverRing;
       hits[L.key].push(g);
     }
   }
+  gRoll=el("g",{"pointer-events":"none"},bar);
   hoverRing=el("circle",{r:14,fill:"none",stroke:css("accent"),"stroke-width":2,"stroke-dasharray":"3 3",visibility:"hidden","pointer-events":"none"},bar);
   bar.playhead=el("line",{x1:-9,x2:-9,y1:24,y2:BOT,stroke:css("accent"),"stroke-width":2,visibility:"hidden","pointer-events":"none"},bar);
 })();
 
-let shown=fracs("Trip",3), target=shown.slice(), anim=null;
+// Tick each step fires on for one track, in bar ticks (4N per bar). Flam/Slop add one tick to their tracks.
+function laneTicks(lane){
+  const s=state.shuffle, N=DATA.N[s];
+  if(state.straight) return ALL.map(k=>k*N/4);
+  const d=(FEEL_DELAY[FEELS[state.feel].key]||[]).includes(lane)?1:0;
+  return positions(state.timing,s).map(p=>p+d);
+}
+// Rolls: after a Hihat 2 step, retrigger on ticks up to (not including) the next step.
+function rollTicks(){
+  if(state.straight||FEELS[state.feel].key!=="Rolls") return [];
+  const s=state.shuffle, N=DATA.N[s], pos=positions(state.timing,s);
+  const row=s+7*TIMINGS.findIndex(t=>t.key===state.timing), every=row<25&&((ROLL_EVERY_TICK>>row)&1);
+  const out=[];
+  for(let k=0;k<16;k++){
+    if(!pattern.H2[k]) continue;
+    const end=k<15?pos[k+1]:4*N;
+    for(let t=pos[k]+1;t<end;t++) if(every||t%2===0) out.push({t,k});
+  }
+  return out;
+}
+function computeTargets(){ const N=DATA.N[state.shuffle], t={}; for(const L of LANES) t[L.key]=laneTicks(L.key).map(p=>p/(4*N)); return t; }
+const cloneT=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v.slice()]));
+let target=computeTargets(), shown=cloneT(target), anim=null, animating=false;
+function drawRolls(){
+  gRoll.innerHTML="";
+  if(animating) return;
+  const N=DATA.N[state.shuffle], y=laneY.H2;
+  for(const r of rollTicks()){
+    const x=BX(r.t/(4*N));
+    el("line",{x1:x,x2:x,y1:y-7,y2:y+7,stroke:css("text"),"stroke-width":2,"stroke-linecap":"round",opacity:muted.H2?.2:.6},gRoll);
+  }
+}
 function colorFor(d){ return Math.abs(d)<1e-6?css("on"):(d>0?css("late"):css("early")); }
 function drawBar(){
   for(const L of LANES){
@@ -366,8 +435,8 @@ function drawBar(){
     L.mute.txt.setAttribute("fill",m?"#fff":css("muted"));
   }
   for(const L of LANES) for(let k=0;k<16;k++){
-    const g=hits[L.key][k], on=pattern[L.key][k], f=shown[k], moved=Math.abs(f-k/16)>1e-6;
-    const c=colorFor(target[k]-k/16);
+    const g=hits[L.key][k], on=pattern[L.key][k], f=shown[L.key][k], moved=Math.abs(f-k/16)>1e-6;
+    const c=colorFor(target[L.key][k]-k/16);
     g.empty.setAttribute("cx",BX(f)); g.empty.setAttribute("visibility",on?"hidden":"visible");
     g.dot.setAttribute("opacity",muted[L.key]?.25:1);
     g.dot.setAttribute("cx",BX(f)); g.dot.setAttribute("fill",c); g.dot.setAttribute("visibility",on?"visible":"hidden");
@@ -375,6 +444,7 @@ function drawBar(){
     g.link.setAttribute("x1",BX(k/16)); g.link.setAttribute("x2",BX(f)); g.link.setAttribute("stroke",c);
     g.link.setAttribute("visibility",on&&moved?"visible":"hidden");
   }
+  drawRolls();
   if(hoverCell) placeHover(hoverCell);
 }
 function drawSlots(){
@@ -384,12 +454,15 @@ function drawSlots(){
   for(let j=0;j<=N;j++) el("line",{x1:BX(j/N),x2:BX(j/N),y1:56,y2:64,stroke:css("slot"),"stroke-width":1.5},gSlots);
 }
 function retarget(){
-  target=state.straight?ALL.map(k=>k/16):fracs(state.timing,state.shuffle);
-  const from=shown.slice(), t0=performance.now(), dur=260;
+  target=computeTargets();
+  const from=cloneT(shown), t0=performance.now(), dur=260;
   cancelAnimationFrame(anim);
-  if(document.hidden){ shown=target.slice(); drawBar(); return; }
+  if(document.hidden){ animating=false; shown=cloneT(target); drawBar(); return; }
+  animating=true;
   const step=now=>{ const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3);
-    shown=from.map((f,k)=>f+(target[k]-f)*e); drawBar(); if(p<1) anim=requestAnimationFrame(step); };
+    for(const L of LANES) shown[L.key]=from[L.key].map((f,k)=>f+(target[L.key][k]-f)*e);
+    if(p>=1) animating=false;
+    drawBar(); if(p<1) anim=requestAnimationFrame(step); };
   anim=requestAnimationFrame(step);
 }
 
@@ -400,10 +473,10 @@ function cellAt(e){
   const p=svgPoint(e), top=laneY[LANES[0].key]-24, bottom=laneY[LANES[LANES.length-1].key]+24;
   if(p.x<X0-12||p.x>X1+16||p.y<top||p.y>bottom) return null;
   let lane=LANES[0]; for(const L of LANES) if(Math.abs(laneY[L.key]-p.y)<Math.abs(laneY[lane.key]-p.y)) lane=L;
-  let k=0; for(let i=1;i<16;i++) if(Math.abs(BX(shown[i])-p.x)<Math.abs(BX(shown[k])-p.x)) k=i;
+  const sl=shown[lane.key]; let k=0; for(let i=1;i<16;i++) if(Math.abs(BX(sl[i])-p.x)<Math.abs(BX(sl[k])-p.x)) k=i;
   return {lane:lane.key,k};
 }
-function placeHover(c){ hoverRing.setAttribute("cx",BX(shown[c.k])); hoverRing.setAttribute("cy",laneY[c.lane]); hoverRing.setAttribute("visibility","visible"); }
+function placeHover(c){ hoverRing.setAttribute("cx",BX(shown[c.lane][c.k])); hoverRing.setAttribute("cy",laneY[c.lane]); hoverRing.setAttribute("visibility","visible"); }
 function setHover(c){ hoverCell=c; if(c) placeHover(c); else hoverRing.setAttribute("visibility","hidden"); }
 function paint(c){
   if(pattern[c.lane][c.k]===paintValue) return;
@@ -448,7 +521,7 @@ function drawHalf(){
   const lens=DATA[state.timing][s].slice(0,8).join(", ");
   document.getElementById("beatnote").textContent=(state.timing==="Trip"&&s>0
     ? `Each small mark is one tick. Taller marks are the ${N/4} tuplet slots per beat that Trip lands on. `
-    : "Each mark is one tick. Numbers under the dots are the tick each step fires on. ")+`Step lengths from the table: ${lens}.`;
+    : "Each mark is one tick. Numbers under the dots are the tick each step fires on. ")+`Step lengths from the table: ${lens}.`+feelNote(N);
   const spb=60000/state.bpm;
   let h=`<tr><th>Step</th><th>Straight tick</th><th>Firmware tick</th><th>Offset at ${state.bpm} bpm</th></tr>`;
   for(let k=0;k<8;k++){
@@ -458,6 +531,14 @@ function drawHalf(){
   document.getElementById("tbl").innerHTML=h;
 }
 
+function feelNote(N){
+  const f=FEELS[state.feel].key, tick=(60000/state.bpm/N).toFixed(1);
+  if(f==="Flam") return ` Flam: Kick and Snare fire 1 tick (${tick} ms) after each step.`;
+  if(f==="Slop") return ` Slop: Kick, Snare and both hihats fire 1 tick (${tick} ms) after each step.`;
+  if(f==="Rolls"){ const row=state.shuffle+7*TIMINGS.findIndex(t=>t.key===state.timing), every=row<25&&((ROLL_EVERY_TICK>>row)&1);
+    return ` Rolls: Hihat 2 retriggers on ${every?"every tick":"every second tick"} (every ${every?tick:(2*60000/state.bpm/N).toFixed(1)} ms) until the next step.`; }
+  return "";
+}
 function describe(){
   const s=state.shuffle, N=DATA.N[s], row=DATA[state.timing][s], pos=positions(state.timing,s);
   if(s===0) return "Straight 16ths. Nothing moves.";
@@ -481,14 +562,18 @@ function readout(){
 function update(){
   document.getElementById("shufv").textContent=state.shuffle;
   document.querySelectorAll("#detents span").forEach((d,i)=>d.classList.toggle("on",i===state.shuffle));
-  document.querySelectorAll(".tbtn").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.timing===state.timing)));
+  document.querySelectorAll("#timing .lampbtn").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.timing===state.timing)));
   drawSlots(); retarget(); drawHalf(); readout();
 }
 
 // ---------- controls ----------
 const tWrap=document.getElementById("timing");
-for(const t of TIMINGS){ const b=document.createElement("button"); b.className="tbtn"; b.dataset.timing=t.key; b.textContent=t.key; b.title=t.blurb;
-  b.addEventListener("click",()=>{ state.timing=t.key; update(); }); tWrap.appendChild(b); }
+for(const t of TIMINGS){
+  const item=document.createElement("div"); item.className="feel-item";
+  item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false">${t.key.toUpperCase()}</button><p class="feel-desc">${t.desc}</p>`;
+  item.querySelector("button").addEventListener("click",()=>{ state.timing=t.key; update(); });
+  tWrap.appendChild(item);
+}
 const det=document.getElementById("detents"), shuffleIn=document.getElementById("shuffle");
 for(let i=0;i<7;i++){ const s=document.createElement("span"); s.textContent=i; s.addEventListener("click",()=>{ shuffleIn.value=i; state.shuffle=i; update(); }); det.appendChild(s); }
 shuffleIn.addEventListener("input",e=>{ state.shuffle=+e.target.value; update(); });
@@ -496,9 +581,22 @@ document.getElementById("bpm").addEventListener("input",e=>{ state.bpm=+e.target
 document.getElementById("ab").addEventListener("click",e=>{
   state.straight=!state.straight; e.currentTarget.setAttribute("aria-pressed",String(state.straight));
   document.getElementById("knob").classList.toggle("bypassed",state.straight);
+  document.getElementById("feelrow").classList.toggle("bypassed",state.straight);
+  document.getElementById("timingrow").classList.toggle("bypassed",state.straight);
   shuffleIn.setAttribute("aria-description",state.straight?"Bypassed: playing straight 16ths":"");
   retarget();
 });
+const fWrap=document.getElementById("feels");
+FEELS.forEach((f,i)=>{
+  const item=document.createElement("div"); item.className="feel-item";
+  item.innerHTML=`<button class="lampbtn" style="--lamp:${f.lamp}" aria-pressed="false">${f.key.toUpperCase()}</button><p class="feel-desc">${f.desc}</p>`;
+  item.querySelector("button").addEventListener("click",()=>{ state.feel=i; drawFeels(); retarget(); drawHalf(); });
+  fWrap.appendChild(item);
+});
+function drawFeels(){
+  fWrap.querySelectorAll(".lampbtn").forEach((b,i)=>b.setAttribute("aria-pressed",String(i===state.feel)));
+  tWrap.style.setProperty("--lamp",FEELS[state.feel].lamp);
+}
 const themeBtn=document.getElementById("theme");
 function applyTheme(t){
   document.documentElement.setAttribute("data-theme",t);
@@ -569,7 +667,7 @@ const VOICES={
     BD:t=>osc(t,"sine",150,47,0.07,0.8,1.0),
     SD:t=>{ osc(t,"triangle",238,0,0,0.11,0.45); osc(t,"triangle",476,0,0,0.07,0.22); noise(t,0.17,0.32,[["highpass",1800]]); },
     H1:(t,l)=>metal(t,0.05,0.34*l,7200),
-    H2:t=>metal(t,0.45,0.24,7200),
+    H2:(t,l,dur)=>metal(t,dur,0.24*l,7200),
     P1:t=>clap(t,1100,0.22,0.55),
     P2:t=>osc(t,"sine",310,250,0.12,0.24,0.55)
   },
@@ -577,7 +675,7 @@ const VOICES={
     BD:t=>{ osc(t,"triangle",250,52,0.05,0.38,0.9); osc(t,"sine",120,50,0.06,0.42,0.6); noise(t,0.012,0.35,[["bandpass",3500,0.8]]); },
     SD:t=>{ osc(t,"triangle",190,160,0.05,0.1,0.42); osc(t,"triangle",330,290,0.05,0.07,0.22); noise(t,0.26,0.48,[["highpass",2400]]); },
     H1:(t,l)=>{ noise(t,0.045,0.3*l,[["highpass",9000]]); return metal(t,0.04,0.08*l,9000); },
-    H2:t=>[noise(t,0.42,0.2,[["highpass",8500]]),metal(t,0.42,0.06,8500)],
+    H2:(t,l,dur)=>[noise(t,dur,0.2*l,[["highpass",8500]]),metal(t,dur,0.06*l,8500)],
     P1:t=>{ osc(t,"triangle",500,0,0,0.025,0.4); osc(t,"triangle",1720,0,0,0.02,0.28); noise(t,0.02,0.28,[["bandpass",2500,1]]); },
     P2:t=>{ osc(t,"sine",150,105,0.2,0.4,0.6); noise(t,0.05,0.07,[["lowpass",1200]]); }
   },
@@ -585,24 +683,24 @@ const VOICES={
     BD:t=>osc(t,"sine",180,58,0.035,0.2,1.0),
     SD:t=>{ osc(t,"triangle",230,0,0,0.06,0.3); noise(t,0.12,0.45,[["bandpass",3200,0.7]]); },
     H1:(t,l)=>noise(t,0.03,0.3*l,[["highpass",7000],["bandpass",9500,0.8]]),
-    H2:t=>noise(t,0.3,0.22,[["highpass",7000],["bandpass",9500,0.8]]),
+    H2:(t,l,dur)=>noise(t,dur*0.7,0.22*l,[["highpass",7000],["bandpass",9500,0.8]]),
     P1:t=>osc(t,"sine",290,215,0.15,0.22,0.55),
     P2:t=>osc(t,"sine",185,135,0.18,0.3,0.6)
   }
 };
-function voice(lane,t,k){
-  if(lane==="H1"&&openHat&&openHat.end>t){ // closed hat chokes the open hat
+function voice(lane,t,k,roll){
+  if((lane==="H1"||lane==="H2")&&openHat&&openHat.end>t){ // a new hat hit chokes the ringing open hat
     for(const g of openHat.gs){ g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.0001,t,0.008); }
     openHat=null;
   }
-  const lvl=k%4===0?1:(k%2===0?0.8:0.6);
-  const r=VOICES[state.kit][lane](t,lvl);
-  if(lane==="H2") openHat={gs:[].concat(r).filter(Boolean),end:t+0.45};
+  if(lane==="H2"){ const dur=roll?0.07:0.45; openHat={gs:[].concat(VOICES[state.kit].H2(t,roll?0.75:1,dur)).filter(Boolean),end:t+dur}; return; }
+  VOICES[state.kit][lane](t,k%4===0?1:(k%2===0?0.8:0.6));
 }
 function barEvents(){
   const s=state.shuffle, N=DATA.N[s], spb=60/state.bpm;
-  const pos=state.straight?ALL.map(k=>k*N/4):positions(state.timing,s);
-  const list=[]; for(let k=0;k<16;k++) for(const L of LANES) if(pattern[L.key][k]) list.push({t:pos[k]/N*spb,lane:L.key,k});
+  const list=[];
+  for(const L of LANES){ const ticks=laneTicks(L.key); for(let k=0;k<16;k++) if(pattern[L.key][k]) list.push({t:ticks[k]/N*spb,lane:L.key,k}); }
+  for(const r of rollTicks()) list.push({t:r.t/N*spb,lane:"H2",k:r.k,roll:true});
   list.sort((a,b)=>a.t-b.t); return {list,dur:4*spb};
 }
 function schedule(){
@@ -614,7 +712,7 @@ function schedule(){
     }
     const e=cur.list[evI], t=bars[bars.length-1].start+e.t;
     if(t>ctx.currentTime+0.12) break;
-    if(!muted[e.lane]) voice(e.lane,t,e.k); evI++;
+    if(!muted[e.lane]) voice(e.lane,t,e.k,e.roll); evI++;
   }
 }
 function frame(){
@@ -636,7 +734,7 @@ function setPlay(on){
 }
 document.getElementById("play").addEventListener("click",()=>setPlay(!playing));
 
-drawKits(); drawBeats(); update();
+drawKits(); drawFeels(); drawBeats(); update();
 </script>
 </body>
 </html>
