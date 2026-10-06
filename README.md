@@ -41,15 +41,15 @@ Pick a Timing, turn the knob and press Play. Audio starts on your first click, b
 | DRNK | Trip's six shuffled rows, from the Deluge community firmware patch | It *is* Trip |
 | HOPP | MPC / Linn 16th swing in whole ticks (54.2% to 70.8%) | Table swap |
 | DEEP | Two-level swing: the 8ths swing, then the 16ths inside them | Table swap, tested on hardware |
-| FOLD | The "e" and "a" of every beat fold in toward the "&" | Table swap, tested on hardware |
+| CLSTR | DRNK inside out: the e, & and a cluster mid-beat, and levels 4 to 6 shift right to lean hard late | Table swap, exact on MODULE 36 (test build 165, not yet heard) |
 
 ### Archive (press MORE)
 
 | Style | What it does |
 |---|---|
+| FOLD | The "e" and "a" of every beat fold in toward the "&" (table swap, tested on hardware in build 164) |
 | AFOLD | FOLD alternating: in on beats 1 and 3, out on 2 and 4 |
 | XFOLD | The original FOLD: hats fold in while Kick and Snare fold out (needs per-track firing) |
-| CLSTR | DRNK inside out: the e, & and a cluster mid-beat, and levels 4 to 6 shift right to lean hard late |
 | TRIO | Off-beats pulled toward quarter-note triplets |
 | PROG | The bar split 7+9, after Tool's odd groupings |
 | VOODOO | Each track drags by its own amount in ms, after D'Angelo's *Voodoo* |
@@ -69,7 +69,7 @@ The green four have two versions, chosen with the Grid switch:
 - **MODULE 36 (default):** whole ticks at 16 to 36 ticks per beat, exactly how Stolperbeats would have to hold them. The Feels run on that grid too.
 - **DELUGE 96:** the Deluge's 96 ticks per beat.
 
-The two versions are within a few ms of each other (HOPP 4.6 ms, DEEP 8.2 ms, FOLD 2.4 ms at 90 bpm). DRNK on MODULE 36 is exactly Trip.
+The two versions are within a few ms of each other (HOPP 4.6 ms, DEEP 8.2 ms at 90 bpm). DRNK on MODULE 36 is exactly Trip, and CLSTR is exact too (each slot is 4 ticks).
 
 ## Feels
 

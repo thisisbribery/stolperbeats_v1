@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stolperbeats Visualiser</title>
+<script>try{ if(localStorage.getItem("stolperbeats-shuffle-map:theme")==="light") document.documentElement.setAttribute("data-theme","light"); }catch(e){}</script>
+<style>
+:root{
+  --bg:#f5f4f0;--panel:#ffffff;--text:#1a1a19;--muted:#68665f;--line:#dcd9d1;--grid:#e9e7e0;
+  --beat:#9a978d;--slot:#c9c5ba;--ghost:#a9a69c;--late:#cf3426;--early:#2c67cf;--on:#1a1a19;
+  --chip:#efede7;--accent:#cf3426;--accent-ink:#fff;--track:#e3e0d8;--ok:#2f8f4e;--warn:#b7791f;
+  --orange:#e8590c;--green:#1f9d55;--green-soft:#e3f4ea;--green-ink:#fff;--empty:#d6d3ca;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10100f;--panel:#1a1a18;--text:#ecebe6;--muted:#9c9a90;--line:#33322d;--grid:#262521;
+    --beat:#76746b;--slot:#45443e;--ghost:#605e57;--late:#ff6a5c;--early:#6d9fff;--on:#ecebe6;
+    --chip:#25241f;--accent:#ff5546;--accent-ink:#fff;--track:#2c2b27;--ok:#5ccf83;--warn:#e9b04f;
+    --orange:#ff8a3d;--green:#2fbf6b;--green-soft:#173524;--green-ink:#08140d;--empty:#3a3934;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10100f;--panel:#1a1a18;--text:#ecebe6;--muted:#9c9a90;--line:#33322d;--grid:#262521;
+  --beat:#76746b;--slot:#45443e;--ghost:#605e57;--late:#ff6a5c;--early:#6d9fff;--on:#ecebe6;
+  --chip:#25241f;--accent:#ff5546;--accent-ink:#fff;--track:#2c2b27;--ok:#5ccf83;--warn:#e9b04f;
+  --orange:#ff8a3d;--green:#2fbf6b;--green-soft:#173524;--green-ink:#08140d;--empty:#3a3934;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Inter","Segoe UI",Roboto,sans-serif}
+main{max-width:1060px;margin:0 auto;padding:36px 16px 72px}
+h1{font-size:30px;line-height:1.15;margin:0 0 8px;letter-spacing:-.01em}
+h2{font-size:17px;margin:0}
+p{margin:0 0 12px}
+.lede{color:var(--muted);max-width:760px;margin-bottom:24px}
+.mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.92em}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:20px}
+
+/* module-style control panel */
+.panel{display:grid;grid-template-columns:1fr 1fr;grid-template-areas:"timing feel" "knob side" "readout readout";gap:18px 32px;align-items:center}
+#timingrow{grid-area:timing} #feelrow{grid-area:feel} .knob{grid-area:knob} .side{grid-area:side} .readout{grid-area:readout}
+.ctl-label{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.knob{min-width:220px}
+.knob input{width:100%;margin:0;-webkit-appearance:none;appearance:none;background:transparent;height:28px;cursor:pointer}
+.knob input::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--track)}
+.knob input::-moz-range-track{height:6px;border-radius:3px;background:var(--track)}
+.knob input::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);border:3px solid var(--panel);box-shadow:0 0 0 1px var(--accent);margin-top:-8px}
+.knob input::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--panel);box-shadow:0 0 0 1px var(--accent)}
+.detents{display:flex;justify-content:space-between;padding:0 3px;margin-top:2px}
+.detents span{width:16px;display:flex;justify-content:center;white-space:nowrap;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;cursor:pointer}
+.detents span.on{color:var(--accent);font-weight:700}
+.side{display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.tempo{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.tempo input{width:130px;accent-color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:8px;padding:7px 14px;font:inherit;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn[aria-pressed=true]{border-color:var(--text)}
+.btn svg{width:11px;height:11px;fill:currentColor}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--muted);padding:6px 12px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;font-variant-numeric:tabular-nums}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--text);color:var(--panel)}
+.kitlabel{font-size:14px;color:var(--text);font-weight:600}
+
+/* readout: fixed geometry so switching Timing never moves the grid */
+.readout{grid-column:1/-1;display:grid;grid-template-columns:190px 1fr 120px 120px;gap:18px;border-top:1px solid var(--line);padding-top:14px}
+.ro-k{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+.ro-v{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.4;height:2.8em;font-size:14px}
+.ro-v .sub{color:var(--muted)}
+
+/* beat pickers */
+.barhead{display:flex;align-items:baseline;gap:8px;margin-bottom:12px;min-width:0}
+.status{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pickers{display:flex;gap:14px;align-items:stretch;flex-wrap:wrap;margin-bottom:14px}
+.presets{border:1px solid var(--line);border-radius:10px;padding:8px 12px 12px;margin:0;flex:1 1 520px;min-width:0}
+.presets legend{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:0 6px}
+.beats{display:flex;flex-wrap:wrap;gap:6px}
+.bbtn{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.bbtn[aria-pressed=true]{background:var(--text);border-color:var(--text);color:var(--panel)}
+.bbtn .n{color:var(--muted);margin-right:4px;font-variant-numeric:tabular-nums}
+.bbtn[aria-pressed=true] .n{color:inherit;opacity:.6}
+.mine-box{display:flex;flex-direction:column;justify-content:center;gap:8px;align-items:flex-start}
+.mine{border:1.5px solid var(--green);background:var(--green-soft);color:var(--green);border-radius:999px;padding:8px 18px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.02em}
+.mine[aria-pressed=true]{background:var(--green);color:var(--green-ink);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 25%,transparent)}
+.clear{border:0;background:transparent;color:var(--muted);font:inherit;font-size:13px;cursor:pointer;padding:0 4px;text-decoration:underline;text-underline-offset:2px}
+
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.scroll svg{display:block;width:100%;min-width:680px;height:auto}
+#bar .mute:focus-visible rect{stroke:var(--accent);stroke-width:2}
+#bar{cursor:crosshair;touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:12px}
+th,td{text-align:left;padding:7px 10px;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+th{font-weight:600;color:var(--muted);font-size:12px;letter-spacing:.04em;text-transform:uppercase;border-top:0}
+td.late{color:var(--late)} td.early{color:var(--early)}
+
+.prov{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.prov ul{margin:0;padding-left:18px;color:var(--muted);font-size:14px}
+.prov li{margin-bottom:6px}
+.prov h3{font-size:14px;margin:0 0 8px}
+.ok{color:var(--ok)} .warn{color:var(--warn)}
+.prov .wide{grid-column:1/-1;padding-top:16px;border-top:1px solid var(--line)}
+
+/* Feel: backlit buttons in the manual's colours */
+.tilerow{min-width:0;align-self:start}
+.feels{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.feel-item{display:flex;flex-direction:column;gap:7px;min-width:0}
+.lampbtn{width:100%;border-radius:6px;padding:7px 4px;font:inherit;font-size:12px;font-weight:800;letter-spacing:.12em;cursor:pointer;
+  color:var(--muted);border:1px solid color-mix(in srgb,var(--lamp) 35%,var(--line));
+  background:color-mix(in srgb,var(--lamp) 16%,var(--chip));
+  box-shadow:inset 0 1px 4px rgba(0,0,0,.28);transition:background .3s ease,box-shadow .3s ease}
+.tiles{display:grid;grid-template-columns:repeat(2,auto);gap:6px}
+.tile{border-radius:3px;padding:6px 12px;letter-spacing:.08em;width:auto}
+.linear-desc{font-size:12.5px;line-height:1.35;color:var(--muted);margin:0;max-width:340px;min-height:2.7em}
+.lampbtn:hover{background:color-mix(in srgb,var(--lamp) 26%,var(--chip))}
+.lampbtn[aria-pressed=true]{color:#141414;border-color:color-mix(in srgb,var(--lamp) 70%,#000);
+  background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--lamp) 45%,#fff) 0%,var(--lamp) 60%,color-mix(in srgb,var(--lamp) 82%,#000) 100%);
+  box-shadow:0 0 16px 1px color-mix(in srgb,var(--lamp) 55%,transparent),inset 0 0 10px rgba(255,255,255,.35)}
+.row-desc{margin:7px 0 0;font-size:12.5px;line-height:1.35;color:var(--muted);height:1.35em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tilerow .ctl-label{display:flex;gap:8px}
+.tilerow .bypass{margin-left:0}
+.tilerow.bypassed .feels,.tilerow.bypassed .timings{filter:grayscale(1);opacity:.4;transition:filter .9s ease,opacity .9s ease}
+/* Timing: Stolperbeats' four buttons, then the two Deluge groove styles, each captioned like a panel silkscreen */
+.timings{display:grid;grid-template-columns:1fr;gap:8px}
+.tgroup{min-width:0}
+.tgroup.deluge{--lamp:#a98bff}
+.tbtns{display:grid;grid-template-columns:repeat(var(--cols),1fr);gap:8px}
+.tgroup.stolper .tbtns{--cols:4} .tgroup.deluge .tbtns{--cols:4}
+.tgroup.deluge .archived{display:none}
+.tgroup.deluge.open .archived{display:flex}
+.morebtn{white-space:nowrap}
+.resrow{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.reslabel{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.resrow .seg button{font-size:11.5px;padding:4px 10px;letter-spacing:.04em}
+.resrow .seg button[aria-pressed=true]{background:#45c472;color:#0b1a10}
+.resrow.off .seg{opacity:.4}
+.resnote{font-size:12px;color:var(--muted)}
+.morebtn .caret{font-size:9px;letter-spacing:0;margin-left:3px}
+.tcap{display:block;margin-top:6px;padding-top:3px;border-top:1px solid var(--line);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:center}
+.tilerow.bypassed .bypass{opacity:1}
+.legend i.rolltick{width:3px;height:12px;border-radius:1px;background:var(--text);opacity:.6;vertical-align:-2px}
+
+/* theme switch */
+.topbar{display:flex;justify-content:flex-end;margin:-12px 0 14px}
+.theme{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:999px;padding:5px 6px 5px 12px;font:inherit;font-size:13px;cursor:pointer}
+.theme .track{position:relative;width:38px;height:22px;border-radius:999px;background:var(--chip);border:1px solid var(--line)}
+.theme .knobdot{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--text);transition:transform .25s ease}
+:root[data-theme="light"] .theme .knobdot{transform:translateX(16px)}
+.theme svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+
+/* Hear straight: button eases to orange and breathes; the Shuffle control greys out over a soft orange glow */
+#ab{transition:background-color .9s ease,border-color .9s ease,color .9s ease}
+#ab[aria-pressed=true]{background:var(--orange);border-color:var(--orange);color:#fff;animation:abPulse 2.4s ease-in-out infinite}
+@keyframes abPulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--orange) 45%,transparent)}50%{box-shadow:0 0 0 7px color-mix(in srgb,var(--orange) 0%,transparent)}}
+.knob{position:relative}
+.knob>*{position:relative;z-index:1}
+.knob::before{content:"";position:absolute;inset:-10px -14px;border-radius:14px;z-index:0;pointer-events:none;opacity:0;
+  background:radial-gradient(ellipse at center,color-mix(in srgb,var(--orange) 30%,transparent),transparent 72%);transition:opacity .9s ease}
+.knob.bypassed::before{opacity:1;animation:glow 2.4s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.45}50%{opacity:1}}
+.knob input,.knob .detents{transition:filter .9s ease,opacity .9s ease}
+.knob.bypassed input,.knob.bypassed .detents{filter:grayscale(1);opacity:.4}
+.bypass{color:var(--orange);font-weight:700;letter-spacing:.04em;opacity:0;transition:opacity .9s ease;margin-left:6px}
+.knob.bypassed .bypass{opacity:1}
+@media (prefers-reduced-motion:reduce){#ab[aria-pressed=true],.knob.bypassed::before{animation:none}}
+
+/* collapsible sources */
+.sources>summary{list-style:none;display:flex;align-items:center;gap:10px;cursor:pointer;font-size:15px}
+.sources>summary::-webkit-details-marker{display:none}
+.sources .chev{width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(-45deg);transition:transform .2s ease;flex:none;margin-right:2px}
+.sources[open] .chev{transform:rotate(45deg)}
+.sources .sum-sub{color:var(--muted);font-size:13px}
+.sources .prov{margin-top:16px;padding-top:16px;border-top:1px solid var(--line)}
+.about-body{margin-top:16px;padding-top:16px;border-top:1px solid var(--line);max-width:780px}
+.about-body p{color:var(--muted);font-size:14px}
+.about-body b{color:var(--text)}
+.disclaimer{grid-column:1/-1;margin:4px 0 0;padding-top:14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+
+@media (max-width:960px){
+  .readout{grid-template-columns:170px 1fr 110px 110px}
+}
+@media (max-width:900px){
+}
+@media (max-width:760px){
+  #timing .lampbtn{letter-spacing:.03em}
+  .morebtn .caret{display:none}
+  .panel{grid-template-columns:1fr;grid-template-areas:"timing" "feel" "knob" "side" "readout"}
+  .side{flex-direction:row;flex-wrap:wrap;align-items:center;gap:12px 16px}
+  .row-desc{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;height:2.7em}
+  .knob{min-width:0}
+  .readout{grid-template-columns:1fr 1fr;gap:12px 16px}
+  .ro-desc{grid-column:1/-1}
+  .ro-desc .ro-v{-webkit-line-clamp:3;height:4.2em}
+  .prov{grid-template-columns:1fr}
+  h1{font-size:25px}
+  table{table-layout:fixed;font-size:13px}
+  th,td{padding:7px 4px;overflow-wrap:anywhere}
+  th{font-size:11px;letter-spacing:0}
+}
+/* compact layout: Timings, Feels, the Swing knob and the grid on one screen; fixed heights so the grid never moves */
+main{padding-top:14px}
+.pagehead{display:grid;grid-template-columns:1fr auto;grid-template-areas:"title theme" "lede lede";align-items:center;gap:4px 16px;margin-bottom:10px}
+.pagehead h1{grid-area:title} .pagehead .theme{grid-area:theme} .pagehead .lede{grid-area:lede}
+
+.pagehead h1{font-size:24px;margin:0}
+.pagehead .lede{margin:0;font-size:12.5px;line-height:1.45;max-width:none}
+.dl{margin-left:auto;border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:6px;padding:1px 9px;font:inherit;font-size:11px;letter-spacing:.04em;text-transform:none;cursor:pointer;line-height:1.5}
+.dl:hover:not(:disabled){border-color:var(--text)}
+.dl:disabled{opacity:.4;cursor:not-allowed}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.barhead h2{font-size:15px}
+.card{padding:14px 16px;margin-bottom:10px}
+.panel{grid-template-columns:1.45fr 1fr;gap:10px 24px}
+.ctl-label{margin-bottom:6px}
+.timings{grid-template-columns:4fr 5fr;gap:6px 12px}
+.tgroup.deluge .tbtns{--cols:5}
+.tbtns,.feels{gap:6px}
+.feels{grid-template-columns:repeat(7,1fr)}
+.lampbtn{font-size:11px;letter-spacing:.08em;padding:6px 2px}
+.tcap{margin-top:4px}
+.row-desc{margin-top:5px}
+.resrow{margin-top:6px;flex-wrap:nowrap;height:24px}
+.resnote{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.knob input{height:24px}
+.side{gap:8px}
+.readout{padding-top:10px;gap:14px}
+.barhead{flex-wrap:wrap;margin-bottom:4px;row-gap:6px}
+.barctl{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.barctl .kitlabel{font-size:12px;color:var(--muted);font-weight:600;margin-left:6px}
+.barctl .seg button{padding:4px 10px;font-size:13px}
+.barctl .tile{padding:4px 10px}
+.pickers{margin-bottom:6px;gap:10px;align-items:center}
+.presets{padding:0;border:0}
+.beats{gap:5px}
+.bbtn{font-size:12px;padding:2px 9px}
+.mine{padding:6px 14px;font-size:13px}
+@media (max-width:900px){
+  .timings{grid-template-columns:1fr}
+  .feels{grid-template-columns:repeat(4,1fr)}
+}
+@media (max-width:760px){
+  .panel{grid-template-columns:1fr}
+  .barctl{margin-left:0}
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="pagehead">
+    <h1>Stolperbeats visualiser</h1>
+    <p class="lede">This is a visualiser and emulator of the MSM Stolperbeats module. I made this to help my eyes understand what my ears were hearing, and also to experiment with hypothetical "alt timings" that may be able to be added to the firmware at some stage. I built this for educational purposes only.</p>
+    <button class="theme" id="theme" aria-label="Switch to light mode">
+      <span id="themeLabel">Dark</span>
+      <span class="track" aria-hidden="true"><span class="knobdot"></span></span>
+    </button>
+  </header>
+
+  <section class="card panel" aria-label="Controls">
+    <div class="tilerow" id="timingrow">
+      <div class="ctl-label">Timing<span class="bypass" aria-hidden="true">· STRAIGHT</span><button class="dl" id="dlTables">Download tables</button></div>
+      <div class="timings" id="timing" role="group" aria-label="Timing"></div>
+      <p class="row-desc" id="timingDesc"></p>
+    </div>
+    <div class="knob" id="knob">
+      <div class="ctl-label"><span id="knobName">Shuffle</span> <span id="shufv" class="mono" style="color:var(--text)">0</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
+      <input id="shuffle" type="range" min="0" max="6" step="1" value="0" aria-label="Shuffle amount, 0 to 6">
+      <div class="detents" id="detents"></div>
+    </div>
+    <div class="side">
+      <label class="tempo">Tempo <input id="bpm" type="range" min="60" max="160" value="90"><span id="bpmv" class="mono">90 bpm</span></label>
+      <div class="row">
+        <button class="btn" id="play" aria-pressed="false"><svg viewBox="0 0 10 10"><path id="playIcon" d="M2 1l7 4-7 4z"/></svg><span>Play</span></button>
+        <button class="btn" id="ab" aria-pressed="false">Hear straight</button>
+      </div>
+    </div>
+    <div class="tilerow" id="feelrow">
+      <div class="ctl-label">Feel<span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
+      <div class="feels" id="feels" role="group" aria-label="Feel"></div>
+      <p class="row-desc" id="feelDesc"></p>
+    </div>
+    <div class="readout" aria-live="polite">
+      <div><span class="ro-k">Timing</span><span class="ro-v" id="roMode"></span></div>
+      <div class="ro-desc"><span class="ro-k">What it does</span><span class="ro-v" id="roDesc"></span></div>
+      <div><span class="ro-k">Resolution</span><span class="ro-v mono" id="roRes"></span></div>
+      <div><span class="ro-k">Largest shift</span><span class="ro-v mono" id="roMax"></span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="barhead"><h2>One bar</h2><span class="status" id="status"></span>
+      <div class="barctl">
+        <span class="kitlabel">Linear</span><div class="tiles" id="linear" role="group" aria-label="Linear"></div>
+        <span class="kitlabel">Kit</span><div class="seg" id="kits" role="group" aria-label="Drum kit"></div>
+      </div>
+    </div>
+    <p class="linear-desc" id="linearDesc" hidden></p>
+    <div class="pickers">
+      <fieldset class="presets">
+        <legend class="sr-only">Drum presets</legend>
+        <div class="beats" id="beats" role="group" aria-label="Drum presets"></div>
+      </fieldset>
+      <div class="mine-box">
+        <button class="mine" id="mine" aria-pressed="false">+ YOUR BEAT</button>
+        <button class="clear" id="clear">Clear your beat</button>
+      </div>
+    </div>
+    <div class="scroll"><svg id="bar" viewBox="0 0 1000 272" role="img" aria-label="One bar on six tracks. Click or drag to place hits."></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--on)"></i>on the grid</span>
+      <span><i style="background:var(--late)"></i>pushed late</span>
+      <span><i style="background:var(--early)"></i>pulled early</span>
+      <span><i style="border:1.5px solid var(--ghost)"></i>where the straight 16th would be</span>
+      <span><i class="rolltick"></i>ratchets (Rolls, Stut)</span>
+      <span><i style="border:1.5px dashed var(--muted)"></i>silenced by Linear</span>
+    </div>
+    <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it.</p>
+  </section>
+
+  <section class="card">
+    <h2 style="margin-bottom:10px" id="halfTitle">Half a bar up close: the firmware's 8-step cycle</h2>
+    <div class="scroll"><svg id="beat" viewBox="0 0 1000 150" role="img" aria-label="Half a bar divided into ticks with the eight step positions"></svg></div>
+    <p class="hint" id="beatnote"></p>
+    <table id="tbl"></table>
+  </section>
+
+  <details class="card sources about">
+    <summary><span class="chev" aria-hidden="true"></span><span><b>About</b> <span class="sum-sub">· what everything on this page is</span></span></summary>
+    <div class="about-body">
+      <p>Pick a Timing, turn the Shuffle control, and watch each hit get pushed off the straight 16th grid, then hear it. Click or drag on the bar to write your own beat.</p>
+      <p><b>Stolperbeats Timings.</b> Trip, Shake, Push and Clave, with all seven Shuffle settings, come from the step tables in firmware 163, and every hit is placed the same way the module places it.</p>
+      <p><b>Feels.</b> Tight, Rolls, Flam and Slop come from the module. Lock (kick stays straight), Late (kick straight, snare a tick late) and Stut (trap-style hat ratchets where producers usually put them) are proposed additions.</p>
+      <p><b>Deluge styles.</b> DRNK (Trip's six shuffled rows) and HOPP (MPC-style 16th swing) are groove tables written for the Synthstrom Deluge community firmware, shown at its 96 ticks per beat. DEEP (8ths and 16ths swinging at once) and CLSTR (DRNK inside out: the "e", "&" and "a" cluster mid-beat instead of leaving a gap, and lean further late as the level rises) are proposed. Every style runs 0 to 6.</p>
+      <p><b>Grid.</b> MODULE 36, the default, rebuilds the green styles in whole ticks at 16 to 36 ticks per beat, the way Stolperbeats would have to hold them, with the Feels running on that grid. DELUGE 96 shows them at the Deluge's 96 ticks per beat.</p>
+      <p><b>MORE.</b> The archive, all proposed: FOLD (the "e" and "a" of every beat fold in toward the "&"), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
+      <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
+      <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
+      <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
+    </div>
+  </details>
+
+  <details class="card sources">
+    <summary><span class="chev" aria-hidden="true"></span><span><b>Sources</b> <span class="sum-sub">· what's read from the firmware, and what's matched</span></span></summary>
+    <div class="prov">
+    <div>
+      <h3 class="ok">✓ Read from the firmware code</h3>
+      <ul>
+        <li>Ticks per beat for each Shuffle setting: <span class="mono">0x08029948</span></li>
+        <li>Step lengths: Trip <span class="mono">0x08029788</span>, Shake <span class="mono">0x080297F8</span>, Push <span class="mono">0x08029868</span>, Clave <span class="mono">0x080298D8</span></li>
+        <li>SHUFFLE is clamped to 0 to 6, and the row is shuffle + 7 × timing (<span class="mono">0x080097E8</span>)</li>
+        <li>At boot, step lengths become running totals (<span class="mono">0x0800D430</span>)</li>
+        <li>Tick length = 60 × 48014 ÷ (bpm × ticks per beat) timer counts, which is exactly 1/N of a beat (<span class="mono">0x08003BB8</span>)</li>
+        <li>A step fires when the tick counter equals its running total. The first 8 totals replay every half bar (<span class="mono">0x08010E58</span>)</li>
+        <li>FEEL is 0 to 3 (Tight, Rolls, Flam, Slop) at <span class="mono">0x2401738C</span>. The firing code runs on every tick, not just on steps</li>
+        <li>Flam fires Kick and Snare one tick after their step. Slop does the same, and also holds Hihat 1 and Hihat 2 for a tick, but only on steps where Kick or Snare hits (<span class="mono">0x08011284</span>)</li>
+        <li>Linear (flag <span class="mono">0x24016ED2</span>, toggled by the Linear button) is applied at each step (<span class="mono">0x08011082</span>): Snare silences Kick and all hats and percs, Kick silences hats and percs, Hihat 2 silences Hihat 1, Perc 2 silences Perc 1. Hats and percs don't silence each other. This matches the manual's priority list</li>
+        <li>Rolls retrigger Hihat 2 until the next step: on every tick for Shuffle 0 and 3, otherwise on every second tick (row mask <span class="mono">0x01224489</span>)</li>
+      </ul>
+    </div>
+    <div>
+      <h3 class="warn">≈ Matched, not traced in code</h3>
+      <ul>
+        <li>Which table belongs to which button. The four tables sit in button order and match the manual's descriptions. Push and Clave are now confirmed on hardware: a private test build with DEEP and FOLD in the third and fourth tables played them from the PUSH and CLAVE buttons. Trip and Shake follow the same order.</li>
+        <li>Feel colours come from the manual. The firmware only switches one of four LEDs per button.</li>
+        <li>Trigger pulse length, and how the Feels appear on MIDI out, haven't been traced.</li>
+        <li>Only the DEEP and FOLD tables have been tried on a real module (by ear, in that test build). Nothing has been measured with instruments.</li>
+        <li>The 808, 909 and 606 kits are synthesised approximations, not samples.</li>
+        <li>Here Linear looks at the pattern, so a track muted with M still takes priority. The firmware's Linear reads the pattern arrays too, so this is likely the same on the module (not tested on hardware).</li>
+        <li>Stut is a proposed Feel, not on the module. Its placement follows common trap production practice, not measured data: rolls at the end of the bar and just before snares, and triplet rolls on steps 7 and 15 in Metro Boomin and Southside style trap (<a href="https://emastered.com/blog/trap-drum-patterns" style="color:inherit">eMastered</a>); 32nd-triplet rolls at the end of a loop with a volume crescendo (<a href="https://ch41rm4n.com/2020/02/17/trap-hats-4-hi-hat-techniques-every-trap-producer-uses/" style="color:inherit">Ch41rm4n</a>); ×2 to ×8 subdivisions with a volume ramp (<a href="https://padwolf.app/learn/how-to-make-hi-hat-rolls/" style="color:inherit">Padwolf</a>). Boom bap rarely rolls its hats (<a href="https://blog.landr.com/trap-hats/" style="color:inherit">LANDR</a>). Here it fires every bar; real tracks often save rolls for every second or fourth bar.</li>
+      </ul>
+    </div>
+    <div class="wide">
+      <h3 class="ok">✓ DRNK, HOPP, BALL, TOSS, SWAY, LIMP, DEEP, DROP, FLOP, FAFF, TRIO, PROG, VOODOO, FOLD, AFOLD, XFOLD, CLSTR, LOTUS and SKEW: Deluge groove styles</h3>
+      <ul>
+        <li>Tables are copied from <span class="mono">src/deluge/model/swing/swing_style.cpp</span> on the <span class="mono">swing-styles-drnk-hopp</span> branch: <span class="mono">kHoppEven16th</span>, <span class="mono">kDrnkTuplet</span> and <span class="mono">kDrnkSlots</span>. Ticks are at the Deluge default of 96 per quarter note, so a 16th is 24 ticks.</li>
+        <li>HOPP swings each pair of 16ths. The patch has 7 levels; here it has 6, landing the even 16th at tick 26, 27, 28, 30, 32 or 34 of the pair: whole ticks, the way a 96ppq MPC60 or MPC3000 places them. That's 54.2% to 70.8%, dense at the low end, then triplet shuffle and Linn's 71% top step.</li>
+        <li>DRNK repeats every beat and has 6 levels: the six shuffled rows of Trip from the Stolperbeats manual's "Shuffle display in Trip mode". Each beat is cut into 7, 9, 5, 6, 8 or 9 equal slots, and its four 16ths play on chosen slots, leaving gaps. The downbeat never moves. These are the same slots the firmware 163 Trip tables give at Shuffle 1 to 6, so DRNK level L lands where Trip at Shuffle L does.</li>
+        <li>BALL is proposed, not yet in the Deluge patch. It's a 16-step window like a bar-long table: each 16th gap is r times the one before (r = 0.995, 0.988, 0.981, 0.974, 0.967, 0.96 for levels 1 to 6), and the 16 gaps fill the 384-tick bar exactly. The bar's downbeat never moves, beats 2 to 4 drift late (beat 3 the most), and the last 16ths stack up just before the next downbeat. At 90 bpm the largest shift runs from about 27 ms at level 1 to about 216 ms at level 6.</li>
+        <li>TOSS, SWAY and LIMP are proposed too, also one-bar windows with the bar's downbeat fixed. TOSS plays BALL's gaps in reverse, so everything lands early by the amounts BALL lands late (beat 3 up to about 216 ms early at 90 bpm). SWAY bends time by M × sin(2πx) ticks across the bar, M = 4, 10, 15, 21, 26, 32: beat 2 late, beat 4 early, beats 1 and 3 fixed, with the tempo swinging up to ±52% at level 6. LIMP makes beat 4 longer than beats 1 to 3 by a ratio rising evenly from 1.08 to 1.5 (5:4 at level 3, 4:3 at level 4); at 1.5 that's 2+2+2+3, the 9/8 aksak limp, with beat 4 landing about 222 ms early at 90 bpm.</li>
+        <li>DEEP is proposed too, in a 1-beat window. It swings at two levels: each beat's 8ths split 52, 55, 58, 61, 64 or 66.7% (triplet 8ths at level 6), and each 8th's two 16ths split 52, 53, 54, 56, 58 or 60% inside it. Every downbeat stays on the grid, the "&amp;" drags the most (about 111 ms at level 6 and 90 bpm), and the gaps shrink across each beat.</li>
+        <li>DROP, FLOP and FAFF are proposed too: hybrids of HOPP and DRNK at the same level. DROP puts Kick and Snare on HOPP level L and the other four tracks on DRNK level L. FLOP is the opposite: Kick and Snare on DRNK, the rest on HOPP. FAFF puts only the Kick on DRNK and the other five tracks on HOPP. On the Deluge they'd need swing per track, which the patch doesn't have yet. Their Feels run on the grid the other four tracks use: DRNK's clock (Trip's Shuffle L) for DROP, the straight clock for FLOP and FAFF.</li>
+        <li>TRIO is proposed too, a one-bar window. The bar's six quarter-note triplets (every 64 ticks) pull on the nearest 16ths: steps 1, 4, 6, 9, 12 and 14 move s/6 of the way onto them, and the steps between spread evenly. The four downbeats never move. At level 6 steps 4 and 12 land 8 ticks early and 6 and 14 land 8 ticks late (about 56 ms at 90 bpm).</li>
+        <li>PROG is proposed too, a one-bar window inspired by Danny Carey's odd groupings over 4/4 in Tool (Schism alternates 5/8 and 7/8). The bar's 16 steps are split 7+9 and each group gets half the bar: 7 in the time of 8, then 9 in the time of 8. Level s moves the steps s/6 of the way. At level 6 step 8 lands right on beat 3 (24 ticks, about 167 ms late at 90 bpm) and the second half rushes back to the bar line.</li>
+        <li>VOODOO, XFOLD, LOTUS and SKEW are proposed per-track styles: each track gets its own placement, which the Deluge patch can't do yet (its swing moves every track together). All four scale from straight at 0 to the values below at level 6.</li>
+        <li>VOODOO follows D'Angelo's <i>Voodoo</i>: Questlove's groove drags behind the metronome and D'Angelo pushed the kick further off the beat, the claps aren't quantised with the snare, and Pino Palladino's bass drags behind drums that already drag (<a href="https://www.slate.com/articles/arts/music_box/2013/02/behind_the_scenes_with_questlove_and_d_angelo_on_voodoo.html" style="color:inherit">Slate</a>). Dilla, the Soulquarians' reference, set a different offset per MPC pad, with the snare about 30 ms after the kick (<a href="https://www.lrb.co.uk/the-paper/v44/n20/francis-gooding/basement-beats" style="color:inherit">LRB</a>). The values are our model, in ms so they hold at any tempo, and exaggerated past what's been described so the effect is obvious: Kick +35, Snare +50, clap (Perc 1) +70, Perc 2 +100 standing in for the bass, hats on the grid. No published measurement of <i>Voodoo</i> itself was found.</li>
+        <li>FOLD uses one grid for every track and the same shape every beat: the "e" moves late and the "a" early, in toward the "&" (up to 14.4 ticks, about 100 ms at 90 bpm), passing the 8th-note triplets a little past level 3 and reaching the quintuplet slots at level 6. Downbeats and every "&" stay. Like the module's own rows it's a plain table, so it would need no code change on Stolperbeats. AFOLD, in the archive, alternates: beats 1 and 3 fold in, beats 2 and 4 fold out at half the amount (also a plain table: Trip already mixes early and late steps in one beat, and Clave already shapes beat 1 and beat 2 differently). XFOLD, in the archive, is the original per-track FOLD: hats and percs fold in while Kick and Snare fold out on the same beats. It's a read of Flume's records, not a measured study.</li>
+        <li>LOTUS gives each track its own swing ratio on the off 16th of each 8th: Kick 50% (straight), Snare 66.7% (triplet 2:1), hats 75% (dotted 3:1), percs 80% (4:1, about 100 ms late at 90 bpm). It follows the "several grids in one beat" feel of Flying Lotus and the LA beat scene. SKEW takes the description of that scene as "several metronomes skewed in different directions": each track drifts on its own clock (by step 16 the hats are about 11 ticks early, the Snare 7.5 late, the percs 15 late, about 104 ms at 90 bpm) and every clock resyncs on the next downbeat.</li>
+        <li>MODULE 36 rebuilds the four green styles within Stolperbeats' limits: whole ticks, 16 to 36 ticks per beat, one ticks-per-beat value per level (the firmware's ticks-per-beat table has an entry for every row). Each level's grid is the closest fit among the module's own 16, 20, 24, 28, 32 and 36 ticks per beat; all are divisible by 4, so the Subdiv clock out, which pulses every 4 ticks, stays even. DRNK is exactly Trip. HOPP uses 36, 32, 24, 32, 36 and 28 ticks per beat (55.6, 56.3, 58.3, 62.5, 66.7 and 71.4%, the last being Linn's 71% step; within 4.6 ms of the 96-tick version at 90 bpm). DEEP uses 36, 24, 36, 36, 36 and 32 (within 8.2 ms). CLSTR uses 36, 20, 36, 32, 28 and 36, exactly: each slot is 4 ticks, and every step is at least 4 ticks. FOLD, now in the archive, still has module rows for Download tables: 36, 20, 28, 20, 16 and 20 (within 2.4 ms). Its levels 5 and 6 have 2-tick steps, one shorter than the shortest step in any factory row (3, in Clave); the code has no minimum and a one-tick Flam or Slop hold still lands before the next step, so it should be fine, but no factory table exercises it. The Rolls rate assumes a new style takes over one Timing's 7 rows, so it follows that group's slots in the row mask (every tick at levels 0 and 3).</li>
+        <li>XFOLD (the per-track FOLD) on the module: traced in firmware 163, it would work with a firmware change, not a rewrite. The fire function already runs on every tick and every output has its own gate, MIDI and note-off state; only one shared "step reached" compare ties the tracks to one grid (<span class="mono">0x08010E7C</span>). Keeping that compare on a straight reference grid and adding a per-track check each tick (6 tracks × 8 steps against a small per-track table) would let tracks fire early or late on their own ticks: roughly 80 lines of C. Flam and Slop's hold can't be stretched to do it, as it only remembers the previous step for one tick. See NOTES.md.</li>
+        <li>CLSTR is proposed too: DRNK inside out. Each beat is cut into n equal slots (9, 5, 9, 8, 7 and 9 for levels 1 to 6), and where DRNK leaves a gap in the middle, CLSTR clusters the "e", "&" and "a" and leans them late, more as the level rises: slots 4, 6, 8 of 9; 3, 4, 5 of 5; 5, 7, 8 of 9; then shifted right, 5, 6, 7 of 8; 5, 6, 7 of 7; and at level 6 the last three of 9 (7, 8, 9), jammed against the next downbeat. At 90 bpm the "e" runs from 56 ms late at level 1 to 278 ms at level 6. On the module it would sit on 36, 20, 36, 32, 28 and 36 ticks per beat, with every step at least 4 ticks, so it would be a plain table too.</li>
+        <li>Every Deluge style here runs 0 to 6, like the module's Shuffle, with 0 meaning straight. HOPP is cut from the patch's 7 levels to 6 by dropping 60.4%. BALL, TOSS, SWAY, LIMP and DEEP keep their gentlest and strongest settings, spread over 6 levels.</li>
+        <li>Swing level 0 is off. Swing on the Deluge is a song-wide time warp, so all six tracks move together, and the Deluge has no Feels. The Feels here are a model of what they would do on these grids: DRNK level L runs them on Trip's Shuffle L clock (DRNK is Trip, so DRNK plus a Feel matches Trip plus that Feel), and the other Deluge styles and Swing OFF run them on Stolperbeats' straight clock of 16 ticks per beat.</li>
+        <li>Lock is a proposed fifth Feel, not on the module or in the Deluge patch. The Kick stays on the straight 16ths while the other five tracks land where the Timing's table puts them, at every level. Downbeat kicks don't move under these Timings anyway, so Lock shows up on off-beat kicks.</li>
+        <li>Late is a proposed sixth Feel, also not on any hardware. It locks the Kick like Lock, and fires every Snare one Feel tick after its step, the same push Flam gives it. Hihats and percs land where the table puts them.</li>
+        <li>The Deluge interpolates positions between steps, so notes off the 16th grid are warped smoothly too. This page only shows the 16th steps, at the default 16th swing interval. An 8th interval doubles every offset.</li>
+        <li>Background: Linn's 54/58/62/66/71 ladder (<a href="https://www.attackmagazine.com/features/interview/roger-linn-swing-groove-magic-mpc-timing/" style="color:inherit">Attack, Roger Linn interview</a>, MPC60 manual), breakbeat swing medians near 54.5% (<a href="https://shamslab.psych.ucla.edu/wp-content/uploads/sites/57/2017/01/Frane_SwingInBreakbeats_2017.pdf" style="color:inherit">Frane 2017</a>), DRNK's slot patterns (<a href="https://makingsoundmachines.com/stolperbeats/manual/" style="color:inherit">Stolperbeats manual</a>, Shuffle section), and the design intent behind tuplet-grid beats (<a href="https://cdm.link/2022/04/superbooth-preview-making-sound-machines-does-shuffled-beats-in-voltage" style="color:inherit">CDM Superbooth preview</a>).</li>
+      </ul>
+    </div>
+    <p class="disclaimer"><b>Disclaimer.</b> This is an unofficial, independent educational project. It is not affiliated with, endorsed by, or supported by Making Sound Machines. Stolperbeats is designed and made by <a href="https://makingsoundmachines.com/stolperbeats/" style="color:inherit">Making Sound Machines</a>, and all rights in the module and its firmware remain theirs. The timing tables used here were read from the publicly available firmware 163 purely to illustrate how the shuffle works. For anything official, see the Stolperbeats manual. The Deluge styles here (DRNK, HOPP, DEEP, FOLD, AFOLD, XFOLD, CLSTR, TRIO, PROG, VOODOO, LOTUS, SKEW, DROP, FLOP, FAFF, BALL, TOSS, SWAY and LIMP) are not part of Stolperbeats. They are groove styles proposed for the open-source Synthstrom Deluge community firmware. DRNK reproduces the Trip patterns published in the Stolperbeats manual, and the Trip timing is Making Sound Machines' design. Neither style is an official release of, or endorsed by, Synthstrom Audible or Making Sound Machines.</p>
+  </div>
+  </details>
+</main>
+
+<script>
+const DATA = {"N": [16, 28, 36, 20, 24, 32, 36], "Trip": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4, 8, 8, 8, 4], [8, 12, 8, 8, 8, 12, 8, 8, 8, 12, 8, 8, 8, 12, 8, 2], [4, 8, 4, 4, 4, 8, 4, 4, 4, 8, 4, 4, 4, 8, 4, 1], [4, 12, 4, 4, 4, 12, 4, 4, 4, 12, 4, 4, 4, 12, 4, 1], [4, 16, 8, 4, 4, 16, 8, 4, 4, 16, 8, 4, 4, 16, 8, 1], [4, 20, 8, 4, 4, 20, 8, 4, 4, 20, 8, 4, 4, 20, 8, 1]], "Shake": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 6, 8, 6, 8, 6, 8, 6, 8, 6, 8, 6, 8, 6, 8, 6], [11, 7, 11, 7, 11, 7, 11, 7, 11, 7, 11, 7, 11, 7, 11, 7], [6, 4, 6, 4, 6, 4, 6, 4, 6, 4, 6, 4, 6, 4, 6, 4], [7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5, 7, 5], [10, 6, 10, 6, 10, 6, 10, 6, 10, 6, 10, 6, 10, 6, 10, 6], [12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6, 12, 6]], "Push": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 7, 7, 6, 8, 7, 7, 6, 8, 7, 7, 6, 8, 7, 7, 6], [10, 9, 9, 8, 10, 9, 9, 8, 10, 9, 9, 8, 10, 9, 9, 8], [6, 5, 5, 4, 6, 5, 5, 4, 6, 5, 5, 4, 6, 5, 5, 4], [7, 6, 6, 5, 7, 6, 6, 5, 7, 6, 6, 5, 7, 6, 6, 5], [10, 8, 8, 6, 10, 8, 8, 6, 10, 8, 8, 6, 10, 8, 8, 6], [11, 9, 9, 7, 11, 9, 9, 7, 11, 9, 9, 7, 11, 9, 9, 7]], "Clave": [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4], [8, 8, 5, 8, 8, 5, 8, 6, 8, 8, 5, 8, 8, 5, 8, 6], [10, 12, 5, 10, 12, 5, 10, 8, 10, 12, 5, 10, 12, 5, 10, 8], [6, 6, 3, 6, 6, 3, 6, 4, 6, 6, 3, 6, 6, 3, 6, 4], [8, 7, 3, 8, 7, 3, 8, 4, 8, 7, 3, 8, 7, 3, 8, 4], [9, 11, 4, 9, 11, 4, 8, 8, 9, 11, 4, 9, 11, 4, 8, 8], [11, 12, 4, 10, 13, 4, 10, 8, 11, 12, 4, 10, 13, 4, 10, 8]]};
+const TIMINGS=[
+  {key:"Trip", blurb:"n-tuplet grooves", desc:"Uneven tuplet grooves where steps trip over each other."},
+  {key:"Shake",blurb:"long-short swing", desc:"Classic long-short swing on every pair of 16ths."},
+  {key:"Push", blurb:"makes time for the downbeat", desc:"Steps lean late, making room for each downbeat."},
+  {key:"Clave",blurb:"3:3:2 holds, the rest swings", desc:"3:3:2 anchors hold while the other steps swing."},
+  {key:"DRNK", deluge:true, blurb:"Stolperbeats Trip, on the Deluge", desc:"Trip's tuplet slots on the Deluge. The downbeat never moves."},
+  {key:"HOPP", deluge:true, blurb:"MPC / Linn 16th swing", desc:"MPC-style swing in whole ticks. Every second 16th lands late."},
+  {key:"DEEP", deluge:true, blurb:"two-level swing", desc:"8ths swing, then each 8th's two 16ths swing again inside it."},
+  {key:"CLSTR", deluge:true, blurb:"n-tuplet clusters, leaning late", desc:"DRNK inside out: the e, & and a cluster mid-beat, then lean late."},
+  // The archive: hidden until MORE is pressed, then shown in this order
+  {key:"FOLD", deluge:true, more:true, blurb:"every beat folds in toward the &", desc:"The e and a of every beat fold in toward the &. Downbeats stay."},
+  {key:"AFOLD", deluge:true, more:true, blurb:"in on 1 and 3, out on 2 and 4", desc:"Beats 1 and 3 fold in toward the &, beats 2 and 4 fold out."},
+  {key:"XFOLD", deluge:true, more:true, voice:true, blurb:"hats fold in, drums fold out", desc:"Hats and percs fold in toward the &, Kick and Snare fold out."},
+  {key:"TRIO", deluge:true, more:true, bar:true, blurb:"quarter-note triplet pull", desc:"Off-beats bend toward quarter-note triplets. Downbeats stay put."},
+  {key:"PROG", deluge:true, more:true, bar:true, blurb:"7+9 odd grouping", desc:"Bar split 7+9: the first 7 steps stretch, the last 9 rush."},
+  {key:"VOODOO", deluge:true, more:true, voice:true, blurb:"D'Angelo, per-track drag", desc:"Every track drags by its own amount, the clap and Perc 2 furthest."},
+  {key:"LOTUS", deluge:true, more:true, voice:true, blurb:"a swing ratio per track", desc:"Flying Lotus: each track swings at its own ratio, Kick straight."},
+  {key:"SKEW", deluge:true, more:true, voice:true, bar:true, blurb:"a metronome per track", desc:"Each track drifts on its own clock, all resyncing on the one."},
+  {key:"DROP", deluge:true, more:true, split:{lanes:["BD","SD"],from:"HOPP",rest:"DRNK"}, blurb:"HOPP kick and snare, DRNK the rest", desc:"Kick and Snare swing like HOPP, the rest trip like DRNK."},
+  {key:"FLOP", deluge:true, more:true, split:{lanes:["BD","SD"],from:"DRNK",rest:"HOPP"}, blurb:"DRNK kick and snare, HOPP the rest", desc:"Kick and Snare trip like DRNK, the rest swing like HOPP."},
+  {key:"FAFF", deluge:true, more:true, split:{lanes:["BD"],from:"DRNK",rest:"HOPP"}, blurb:"DRNK kick, HOPP the rest", desc:"Kick trips like DRNK, the other five swing like HOPP."},
+  {key:"BALL", deluge:true, more:true, bar:true, blurb:"bouncing-ball bar", desc:"Loose at the start of the bar, stacking up toward the end."},
+  {key:"TOSS", deluge:true, more:true, bar:true, blurb:"thrown-ball bar", desc:"Tight at the start of the bar, opening out toward the end."},
+  {key:"SWAY", deluge:true, more:true, bar:true, blurb:"rubato wave across the bar", desc:"Tempo breathes across the bar: beat 2 late, beat 4 early."},
+  {key:"LIMP", deluge:true, more:true, bar:true, blurb:"aksak, uneven beats", desc:"Three short beats and one long: the 2+2+2+3 aksak limp."}
+];
+// DRNK and HOPP: Deluge community firmware, swing_style.cpp (branch swing-styles-drnk-hopp).
+// Ticks at the Deluge default of 96 per quarter note, 24 per 16th. Swing level 0 is off, 1-7 index the tables.
+const DELUGE={
+  TPQ:96, STEP:24,
+  // kHoppEven16th, cut from 7 levels to 6 to match Shuffle 0-6: 60.4% (29) is dropped, keeping Linn's
+  // 54/58/62/66/71 ladder plus 56.3% in the boom-bap band. The patch still has all 7.
+  HOPP:[26,27,28,30,32,34], // tick where the even 16th of each pair lands
+  // DRNK: Trip's six shuffled rows from the Stolperbeats manual ("Shuffle display in Trip mode").
+  // Each beat is cut into N equal slots (kDrnkTuplet) and its four 16ths play on the given slots (kDrnkSlots).
+  DRNK_N:[7,9,5,6,8,9],
+  DRNK_SLOTS:[[0,2,4,6],[0,2,5,7],[0,1,3,4],[0,1,4,5],[0,1,5,7],[0,1,6,8]],
+  // BALL (proposed, not in the patch yet): a bouncing ball over one bar. Each 16th gap is r times the one before,
+  // and the 16 gaps fill the 384-tick bar exactly, so the next bar's downbeat stays on time.
+  BALL_R:[0.995,0.988,0.981,0.974,0.967,0.96], // 6 levels, same gentlest and strongest as before
+  // TOSS, SWAY and LIMP (proposed, not in the patch): also one-bar windows, downbeat of the bar fixed.
+  // TOSS plays BALL's gaps in reverse. SWAY bends time by M·sin(2πx) ticks across the bar (x = 0..1): beat 2
+  // late, beat 4 early. LIMP makes beat 4 R times as long as beats 1 to 3; R = 1.5 is 2+2+2+3 aksak.
+  SWAY_M:[4,10,15,21,26,32],
+  // DEEP (proposed, not in the patch): swing at two levels in a 1-beat window. Each beat's 8ths split DEEP_8 %,
+  // then each 8th's 16ths split DEEP_16 % inside it.
+  DEEP_8:[52,55,58,61,64,66.7], DEEP_16:[52,53,54,56,58,60],
+  // TRIO (proposed): the bar's six quarter-note triplets (every 64 ticks) pull on the nearest 16ths. Steps 1, 4, 6, 9,
+  // 12 and 14 are pinned to them at level 6, the steps between spread evenly, and the four downbeats never move.
+  TRIO_PINS:{0:0,3:64,5:128,8:192,11:256,13:320,16:384},
+  // PROG (proposed): the bar split into odd groups that each get half the bar, Tool / Schism style. The first 7 steps
+  // stretch to fill half a bar (7 in the time of 8), the last 9 rush (9 in the time of 8). Level s morphs s/6 of the way.
+  PROG_GROUPS:[7,9],
+  // Per-track styles (proposed): each track gets its own placement on top of the straight grid. Values are level 6.
+  // VOODOO: drag in ms, so it stays in the same range at any tempo. Drums drag, the clap isn't quite with the snare,
+  // and Perc 2 stands in for Pino Palladino's bass, dragging furthest. Hats are the straight reference.
+  VOODOO_MS:{BD:35,SD:50,H1:0,H2:0,P1:70,P2:100},
+  // XFOLD (archived per-track FOLD): hats and percs fold the "e" late and the "a" early, in toward the "&"; Kick and Snare fold the other way. They cross the
+  // 8th-note triplets (8 ticks) a little past level 3 and reach the quintuplet slots 2 and 3 of 5 (14.4 ticks) at level 6.
+  FOLD_LANES:["H1","H2","P1","P2"], FOLD_BEAT:[0,14.4,0,-14.4],
+  // Kick and Snare counter-fold: their "e" moves early and their "a" late, out toward the beats, at half the hats'
+  // amount (7.2 ticks, about 50 ms at 90 bpm). Downbeats and the "&" stay, so the backbeat holds.
+  FOLD_KS_BEAT:[0,-7.2,0,7.2],
+  // FOLD: one grid for every track; every beat folds in ("e" late, "a" early, up to 14.4 ticks).
+  // AFOLD (archived): beats 1 and 3 fold in, beats 2 and 4 fold out ("e" early, "a" late, half that), every half bar.
+  FOLD_IN:[0,14.4,0,-14.4], FOLD_OUT:[0,-7.2,0,7.2],
+  // LOTUS: a swing ratio per track for the off 16th of each 8th: straight, triplet (2:1), dotted (3:1), 4:1.
+  LOTUS_PCT:{BD:50,SD:200/3,H1:75,H2:75,P1:80,P2:80},
+  // SKEW: each track runs on a slightly different clock and drifts until the bar line resyncs it (ticks by step 16).
+  SKEW_END:{BD:0,SD:8,H1:-12,H2:-12,P1:16,P2:16},
+  LIMP_R:[13,14,15,16,17,18].map(x=>x/12), // 1.08 to 1.5: 5:4 at level 3, 4:3 at 4, 3:2 at 6
+  // CLSTR (proposed): DRNK inside out. Each beat is cut into n equal slots and, where DRNK leaves a gap in the middle,
+  // CLSTR clusters the "e", "&" and "a" mid-beat. Levels 1-3 cluster around the middle (leaning late when n is odd);
+  // levels 4-6 are tight clusters shifted right, leaning late hard. The 9-slot cluster slides right from level 1
+  // to 3 to 6, where it's jammed against the next downbeat.
+  CLSTR_N:[9,5,9,8,7,9],
+  CLSTR_SLOTS:[[0,3,5,7],[0,2,3,4],[0,4,6,7],[0,4,5,6],[0,4,5,6],[0,6,7,8]],
+  CLSTR_SHIFTED:[false,false,false,true,true,true],
+  DRNK_CAPTION:["Last step is rushed","A gap in the middle","A wider gap in the middle","A fairly large gap in the middle","Rushed in beginning and end","Rushed in beginning and end"]
+};
+const isDeluge=t=>!!TIMINGS.find(x=>x.key===t).deluge;
+// Feel order is the firmware's FEEL value 0-3. Colours from the manual: orange, red, yellow, white.
+const FEELS=[
+  {key:"Tight",lamp:"#f39237",desc:"All six tracks shuffle together. No extra timing on top."},
+  {key:"Rolls",lamp:"#e8423a",desc:"Hihat 2 becomes a ratchet that retriggers until the next step."},
+  {key:"Flam", lamp:"#f5c542",desc:"Kick and Snare land one tick after their step."},
+  {key:"Slop", lamp:"#f4f1e6",desc:"Like Flam, plus hats a tick late where they hit with Kick or Snare."},
+  // Not on the module or in the Deluge patch: proposed fifth and sixth Feels. Colours are ours.
+  {key:"Lock", lamp:"#4fc3d9",desc:"Kick stays on the straight grid. Everything else shuffles."},
+  {key:"Late", lamp:"#e98bd0",desc:"Kick stays straight, Snare lands one tick late. The rest shuffles."},
+  {key:"Stut", lamp:"#7fd6a8",desc:"Hihat 1 ratchets where trap puts its rolls, following the Timing."}
+];
+const FEEL_DELAY={Flam:["BD","SD"],Slop:["BD","SD","H1","H2"],Late:["SD"]}; // tracks fired on (running total + 1)
+// Slop only holds the hats on steps where Kick or Snare also hits; on other steps they fire on time (0x08011284).
+const SLOP_ONLY_WITH_KS=["H1","H2"];
+const KICK_LOCKED=["Lock","Late"]; // Feels that keep the kick on the straight 16ths
+const ROLL_EVERY_TICK=0x01224489; // firmware row mask: rows that roll on every tick, the rest on even ticks
+// Six tracks in the module's order. Hihat 1 is closed, Hihat 2 is open (the manual's Linear priority lists HH2 as open).
+const LANES=[
+  {key:"BD",name:"Kick",r:11},{key:"SD",name:"Snare",r:10},
+  {key:"H1",name:"Hihat 1",r:6.5},{key:"H2",name:"Hihat 2",r:7.5},
+  {key:"P1",name:"Perc 1",r:8},{key:"P2",name:"Perc 2",r:9}
+];
+const KITS={
+  "808":{BD:"kick",SD:"snare",H1:"closed hat",H2:"open hat",P1:"clap",P2:"conga"},
+  "909":{BD:"kick",SD:"snare",H1:"closed hat",H2:"open hat",P1:"rimshot",P2:"low tom"},
+  "606":{BD:"kick",SD:"snare",H1:"closed hat",H2:"open hat",P1:"high tom",P2:"low tom"}
+};
+const ALL=[...Array(16).keys()], EIGHTHS=[0,2,4,6,8,10,12,14], except=(...x)=>ALL.filter(i=>!x.includes(i));
+// Example beats (step numbers 0-15). Illustrative only, not the module's banks.
+const BEATS=[
+  {name:"Boom bap",   BD:[0,7,10],         SD:[4,12],        H1:except(14),                     H2:[14],         P1:[11],           P2:[]},
+  {name:"Head nod",   BD:[0,6,10],         SD:[4,12,15],     H1:ALL,                            H2:[],           P1:[],             P2:[3,13]},
+  {name:"Lazy pocket",BD:[0,3,9,14],       SD:[4,12],        H1:[0,2,3,4,6,8,10,11,12,14],      H2:[7],          P1:[15],           P2:[]},
+  {name:"Halftime",   BD:[0,6,11],         SD:[8],           H1:except(14),                     H2:[14],         P1:[3,11],         P2:[13]},
+  {name:"House",      BD:[0,4,8,12],       SD:[4,12],        H1:[0,1,3,4,5,7,8,9,11,12,13,15],  H2:[2,6,10,14],  P1:[10],           P2:[]},
+  {name:"Funk",       BD:[0,3,6,10],       SD:[4,9,12],      H1:except(7),                      H2:[7],          P1:[14],           P2:[]},
+  {name:"Break",      BD:[0,2,10,11],      SD:[4,7,9,12,15], H1:[0,2,4,6,8,10,12],              H2:[14],         P1:[],             P2:[]},
+  {name:"Tresillo",   BD:[0,3,6,8,11,14],  SD:[4,12],        H1:EIGHTHS,                        H2:[],           P1:[0,3,6,10,12],  P2:[7,15]},
+  {name:"Trap",       BD:[0,3,10],         SD:[8],           H1:[0,2,4,6,7,8,10,12,14,15],      H2:[],           P1:[8],            P2:[]},  // half-time; shows off Stut
+  {name:"Seven nine", BD:[0,7],            SD:[4,13],        H1:[0,2,4,7,9,11,13],              H2:[],           P1:[],             P2:[]},  // accents the 7+9 (2+2+3, 2+2+2+3) for PROG
+  {name:"Quarter trips",BD:[0,8],          SD:[4,12],        H1:[0,3,5,8,11,13],                H2:[],           P1:[],             P2:[3,11]}, // hats on TRIO's pinned steps
+  // Busier grooves with both Perc tracks working, to hear the per-track styles pull the layers apart
+  {name:"Afrobeat",   BD:[0,3,7,10],       SD:[4,9,12,14],   H1:except(6,14),                   H2:[6,14],       P1:[2,5,10,13],    P2:[0,3,6,8,11]},
+  {name:"Samba",      BD:[0,3,4,8,11,12],  SD:[6,14],        H1:ALL,                            H2:[],           P1:[0,2,5,7,8,10,13,15], P2:[3,7,11,15]},
+  {name:"Jungle",     BD:[0,2,10],         SD:[4,7,9,12,14], H1:[0,2,4,6,8,10,12,13,14],        H2:[11],         P1:[3,6,11,15],    P2:[1,5,8,13]},
+  {name:"Dembow",     BD:[0,4,8,12],       SD:[3,6,11,14],   H1:EIGHTHS,                        H2:[],           P1:[3,6,7,11,14,15], P2:[2,5,10,13]}
+];
+const toArr=steps=>{ const a=Array(16).fill(0); steps.forEach(i=>a[i]=1); return a; };
+const CUSTOM=BEATS.length, STORE="stolperbeats-shuffle-map:your-beat";
+const emptyPattern=()=>Object.fromEntries(LANES.map(L=>[L.key,Array(16).fill(0)]));
+let custom=emptyPattern();
+try{ const saved=JSON.parse(localStorage.getItem(STORE)); if(saved&&LANES.every(L=>Array.isArray(saved[L.key])&&saved[L.key].length===16)) custom=saved; }catch(e){}
+function saveCustom(){ try{ localStorage.setItem(STORE,JSON.stringify(custom)); }catch(e){} }
+let pattern={}, beatIdx=0, edited=false;
+const muted={};
+function loadBeat(i){
+  beatIdx=i; edited=false;
+  if(i===CUSTOM){ pattern=custom; return; } // edits write straight into the saved slot
+  pattern={}; for(const L of LANES) pattern[L.key]=toArr(BEATS[i][L.key]);
+}
+loadBeat(0);
+const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:true}; // the green styles start on MODULE 36
+// MODULE 36: the four green styles rebuilt as Stolperbeats would hold them: whole ticks, 16 to 36 ticks per beat, with
+// its own ticks-per-beat value per level (the firmware keeps one per row). Grids are limited to the module's own
+// 16, 20, 24, 28, 32 and 36 so the Subdiv clock out (a pulse every 4 ticks) stays even. Each level is [N, the tick of each of the
+// 4 steps in a beat]. Found by searching N = 16..36 for the closest fit
+// (see Sources). DRNK needs no table: it is Trip. CLSTR is exact: its n slots are 4 ticks each, so N = 4n.
+// FOLD is archived but keeps its module rows for Download tables (it ran on hardware in test build 164).
+const GREEN=["DRNK","HOPP","DEEP","CLSTR"];
+const MODULE={
+  HOPP:[[36,[0,10,18,28]],[32,[0,9,16,25]],[24,[0,7,12,19]],[32,[0,10,16,26]],[36,[0,12,18,30]],[28,[0,10,14,24]]],
+  DEEP:[[36,[0,10,19,28]],[24,[0,7,13,19]],[36,[0,11,21,29]],[36,[0,12,22,30]],[36,[0,13,23,31]],[32,[0,13,21,28]]],
+  CLSTR:DELUGE.CLSTR_N.map((n,i)=>[4*n,DELUGE.CLSTR_SLOTS[i].map(x=>4*x)]),
+  FOLD:[[36,[0,10,18,26]],[20,[0,6,10,14]],[28,[0,9,14,19]],[20,[0,7,10,13]],[16,[0,6,8,10]],[20,[0,8,10,12]]]
+};
+// True when a green style is playing on MODULE 36 (only the selected style switches; hybrids keep their 96 grids).
+const modOn=t=>state.mod&&GREEN.includes(state.timing)&&GREEN.includes(t);
+const modN=(t,s)=>s===0?16:t==="DRNK"?DATA.N[s]:MODULE[t][s-1][0];
+// Linear: when several tracks hit on the same step, only the highest priority one in each chain plays.
+// The manual's two parallel chains, so a hat and a perc can still share a step.
+const LINEARS=[
+  {key:"Off",lamp:"#9c9a90",desc:"Every hit plays."},
+  {key:"On",lamp:"#9ad06b",chains:[["SD","BD","H2","H1"],["SD","BD","P2","P1"]],desc:"Snare beats Kick, both beat the hats and percs. Open hat beats closed, Perc 2 beats Perc 1."}
+];
+// True when Linear silences this track's hit on step k: a higher priority track in one of its chains also hits there.
+function linearMuted(lane,k){
+  const chains=LINEARS[state.linear].chains||[];
+  return chains.some(c=>c.includes(lane)&&c.slice(0,c.indexOf(lane)).some(l=>pattern[l][k]));
+}
+
+// Ticks per beat: the Shuffle setting's N on Stolperbeats, a fixed 96 on the Deluge.
+const res=(timing,s)=>modOn(timing)?modN(timing,s):isDeluge(timing)?DELUGE.TPQ:DATA.N[s];
+const curRes=()=>res(state.timing,state.shuffle);
+// The Feels only exist on Stolperbeats. Deluge swing moves every track together.
+const feelKey=()=>FEELS[state.feel].key;
+// The clock the Feels run on. Stolperbeats: the Shuffle setting's ticks, and its firmware row for the Rolls mask.
+// The Deluge styles have no Feels, so this is our model: DRNK level L is Trip at Shuffle L, so it uses
+// Trip's clock (row L). The other Deluge styles and swing off use the straight clock, 16 ticks per beat (row 0).
+function feelClock(){
+  const s=state.shuffle, t=state.timing;
+  if(!isDeluge(t)) return {N:DATA.N[s],row:s+7*TIMINGS.findIndex(x=>x.key===t)};
+  // MODULE 36: the Feels run on the level's own grid. Assuming a new style takes over one Timing's 7 rows, its Rolls
+  // follow that group's slot in the row mask: every tick at levels 0 and 3, every second tick otherwise.
+  if(modOn(t)) return {N:modN(t,s),row:s};
+  const home=splitOf(t)?splitOf(t).rest:t; // hybrids run the Feels on the grid most tracks use
+  return home==="DRNK"?{N:DATA.N[s],row:s}:{N:16,row:0};
+}
+const rollsEveryTick=row=>row<25&&!!((ROLL_EVERY_TICK>>row)&1);
+// Bar tick each of the 16 steps fires on (4 × ticks per beat per bar).
+function positions(timing,s){
+  if(modOn(timing)){
+    if(timing==="DRNK") return positions("Trip",s);
+    if(s===0){ const N=modN(timing,s); return ALL.map(k=>k*N/4); }
+    const [N,cyc]=MODULE[timing][s-1], w=cyc.length; // one beat (4 steps); an 8-step half bar would also work
+    return ALL.map(k=>Math.floor(k/w)*N*w/4+cyc[k%w]);
+  }
+  if(isDeluge(timing)){
+    if(s===0) return ALL.map(k=>k*DELUGE.STEP);
+    if(splitOf(timing)) return positions(splitOf(timing).rest,s); // the tracks outside the split; see lanePositions
+    if(timing==="CLSTR"){ const n=DELUGE.CLSTR_N[s-1], sl=clstrSlots(s); return ALL.map(k=>Math.floor(k/4)*DELUGE.TPQ+sl[k%4]*DELUGE.TPQ/n); }
+    if(timing==="DRNK"){ const n=DELUGE.DRNK_N[s-1], sl=DELUGE.DRNK_SLOTS[s-1]; return ALL.map(k=>Math.floor(k/4)*DELUGE.TPQ+sl[k%4]*DELUGE.TPQ/n); } // 1-beat window
+    if(timing==="BALL"||timing==="TOSS"){ const g=ballGaps(s); if(timing==="TOSS") g.reverse(); let acc=0; return ALL.map(k=>{ const p=acc; acc+=g[k]; return p; }); } // 16-step window
+    if(timing==="DEEP"){ const a=DELUGE.DEEP_8[s-1]/100, b=DELUGE.DEEP_16[s-1]/100, e=a*DELUGE.TPQ, beat=[0,b*e,e,e+b*(DELUGE.TPQ-e)];
+      return ALL.map(k=>Math.floor(k/4)*DELUGE.TPQ+beat[k%4]); } // 4-step window
+    if(timing==="TRIO"){ const P=DELUGE.TRIO_PINS, at=Object.keys(P).map(Number);
+      return ALL.map(k=>{ const a=Math.max(...at.filter(x=>x<=k)), b=Math.min(...at.filter(x=>x>k)), full=P[a]+(P[b]-P[a])*(k-a)/(b-a);
+        return k*DELUGE.STEP+(full-k*DELUGE.STEP)*s/6; }); } // level 6 lands right on the triplets
+    if(timing==="PROG"){ const [a,b]=DELUGE.PROG_GROUPS, half=2*DELUGE.TPQ;
+      return ALL.map(k=>{ const full=k<a?k*half/a:half+(k-a)*half/b; return k*DELUGE.STEP+(full-k*DELUGE.STEP)*s/6; }); }
+    if(timing==="FOLD") return ALL.map(k=>k*DELUGE.STEP+DELUGE.FOLD_IN[k%4]*s/6);
+    if(timing==="AFOLD") return ALL.map(k=>k*DELUGE.STEP+(Math.floor(k/4)%2?DELUGE.FOLD_OUT:DELUGE.FOLD_IN)[k%4]*s/6);
+    if(timing==="SWAY") return ALL.map(k=>k*DELUGE.STEP+DELUGE.SWAY_M[s-1]*Math.sin(2*Math.PI*k/16));
+    if(timing==="LIMP"){ const b=limpBeats(s); return ALL.map(k=>{ const i=Math.floor(k/4); return b.short*i+(k%4)*(i<3?b.short:b.long)/4; }); }
+    return ALL.map(k=>k*DELUGE.STEP+(k%2?DELUGE.HOPP[s-1]-DELUGE.STEP:0)); // HOPP: 2-step window
+  }
+  // Stolperbeats firmware: running totals pos[k]=sum(len[0..k-1]); the first 8 replay each half bar.
+  const row=DATA[timing][s], half=[0]; let acc=0;
+  for(let k=0;k<7;k++){ acc+=row[k]; half.push(acc); }
+  const N=DATA.N[s]; return half.concat(half.map(p=>p+2*N));
+}
+// Per-track Timings: where one track's 16 steps play, in bar ticks. positions() gives these styles the straight grid.
+function voicePositions(timing,s,lane){
+  const D=DELUGE, f=s/6;
+  return ALL.map(k=>{ const st=k*D.STEP;
+    if(timing==="VOODOO") return st+D.VOODOO_MS[lane]*f*state.bpm*D.TPQ/60000;  // ms to ticks at the current tempo
+    if(timing==="XFOLD") return st+(D.FOLD_LANES.includes(lane)?D.FOLD_BEAT:D.FOLD_KS_BEAT)[k%4]*f;
+    if(timing==="LOTUS") return st+(k%2?(D.LOTUS_PCT[lane]-50)/100*2*D.STEP*f:0);
+    if(timing==="SKEW") return st+D.SKEW_END[lane]*k/16*f;
+    return st; });
+}
+const isVoice=t=>!!TIMINGS.find(x=>x.key===t).voice;
+// DROP and FLOP (proposed) are hybrids of HOPP and DRNK at the same level L (L = 1-6). DROP puts Kick and Snare
+// on HOPP and the other four tracks on DRNK; FLOP is the opposite.
+// FAFF (proposed) puts only the Kick on DRNK and the other five tracks on HOPP.
+const splitOf=t=>TIMINGS.find(x=>x.key===t).split;
+function lanePositions(timing,s,lane){
+  if(isVoice(timing)) return voicePositions(timing,s,lane);
+  const sp=splitOf(timing);
+  return sp?positions(sp.lanes.includes(lane)?sp.from:sp.rest,s):positions(timing,s);
+}
+const laneNames=sp=>sp.lanes.map(l=>LANES.find(L=>L.key===l).name).join(" and ");
+const usesDRNK=t=>t==="DRNK"||!!splitOf(t);
+// BALL's 16 gaps in ticks: g0, g0·r, g0·r², ... summing to one bar.
+function ballGaps(s){ const r=DELUGE.BALL_R[s-1], g0=4*DELUGE.TPQ*(1-r)/(1-Math.pow(r,16)); return ALL.map(k=>g0*Math.pow(r,k)); }
+// LIMP's beat lengths in ticks: three short beats and a long fourth, R:1, filling the bar.
+function limpBeats(s){ const R=DELUGE.LIMP_R[s-1], short=4*DELUGE.TPQ/(3+R); return {R,short,long:R*short}; }
+// CLSTR's slots in a beat (out of CLSTR_N for the level).
+const clstrSlots=s=>DELUGE.CLSTR_SLOTS[s-1];
+// The n-tuplet grid a style plays on, for drawing its slots: DRNK (and the hybrids that use it) and CLSTR.
+const tupletOf=(t,s)=>!s?null:t==="CLSTR"?{n:DELUGE.CLSTR_N[s-1],slots:clstrSlots(s)}:usesDRNK(t)?{n:DELUGE.DRNK_N[s-1],slots:DELUGE.DRNK_SLOTS[s-1]}:null;
+const fmtTick=p=>Number.isInteger(p)?String(p):String(+p.toFixed(2));
+const swingPct=e=>(e/(2*DELUGE.STEP)*100).toFixed(1);
+
+const NS="http://www.w3.org/2000/svg";
+function el(tag,attrs,parent){ const e=document.createElementNS(NS,tag); for(const k in attrs) e.setAttribute(k,attrs[k]); if(parent) parent.appendChild(e); return e; }
+const css=v=>`var(--${v})`;
+const fmtMs=ms=>Math.abs(ms)<0.05?"0 ms":(ms>0?"+":"−")+Math.abs(ms).toFixed(1)+" ms";
+
+// ---------- bar view ----------
+const bar=document.getElementById("bar"), X0=122, X1=984, BX=f=>X0+(X1-X0)*f;
+const laneY={}, BOT=260; LANES.forEach((L,i)=>laneY[L.key]=86+i*32); // tight lanes so the whole grid fits on screen
+const gSlots=el("g",{},bar), hits={};
+let hoverRing, gRoll;
+(function buildBar(){
+  for(let b=0;b<=4;b++){
+    el("line",{x1:BX(b/4),x2:BX(b/4),y1:24,y2:BOT,stroke:css("beat"),"stroke-width":b%4?1:1.6},bar);
+    if(b<4){ const t=el("text",{x:BX(b/4)+5,y:18,fill:css("muted"),"font-size":12},bar); t.textContent=`beat ${b+1}`; }
+  }
+  for(let k=0;k<16;k++){
+    if(k%4) el("line",{x1:BX(k/16),x2:BX(k/16),y1:52,y2:BOT,stroke:css("grid"),"stroke-width":1},bar);
+    const t=el("text",{x:BX(k/16),y:46,"text-anchor":"middle",fill:css("muted"),"font-size":11},bar); t.textContent=k+1;
+  }
+  el("line",{x1:X0,x2:X1,y1:60,y2:60,stroke:css("line"),"stroke-width":1},bar);
+  for(const L of LANES){
+    const y=laneY[L.key];
+    const lt=el("text",{x:6,y:y,fill:css("text"),"font-size":12,"font-weight":600},bar); lt.textContent=L.name;
+    const sub=el("text",{x:6,y:y+13,fill:css("muted"),"font-size":10},bar);
+    const mb=el("g",{class:"mute",role:"button",tabindex:0,"aria-pressed":"false","aria-label":`Mute ${L.name}`,style:"cursor:pointer"},bar);
+    const mtitle=el("title",{},mb); mtitle.textContent=`Mute ${L.name}`;
+    mb.rect=el("rect",{x:80,y:y-10,width:26,height:20,rx:5,"stroke-width":1.2},mb);
+    mb.txt=el("text",{x:93,y:y+4,"text-anchor":"middle","font-size":11,"font-weight":700},mb); mb.txt.textContent="M";
+    const toggleMute=()=>{ muted[L.key]=!muted[L.key]; drawBar(); };
+    mb.addEventListener("click",toggleMute);
+    mb.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); toggleMute(); } });
+    L.label=lt; L.sub=sub; L.mute=mb;
+    el("line",{x1:X0,x2:X1,y1:y,y2:y,stroke:css("grid"),"stroke-width":2},bar);
+    hits[L.key]=[];
+    for(let k=0;k<16;k++){
+      const g={};
+      g.empty=el("circle",{cy:y,r:3,fill:css("empty"),"pointer-events":"none"},bar);
+      g.ghost=el("circle",{cx:BX(k/16),cy:y,r:L.r-1,fill:"none",stroke:css("ghost"),"stroke-width":1.5,"pointer-events":"none"},bar);
+      g.link=el("line",{y1:y,y2:y,"stroke-width":2.5,"stroke-opacity":.5,"pointer-events":"none"},bar);
+      g.dot=el("circle",{cy:y,r:L.r,"pointer-events":"none"},bar);
+      hits[L.key].push(g);
+    }
+  }
+  gRoll=el("g",{"pointer-events":"none"},bar);
+  hoverRing=el("circle",{r:14,fill:"none",stroke:css("accent"),"stroke-width":2,"stroke-dasharray":"3 3",visibility:"hidden","pointer-events":"none"},bar);
+  bar.playhead=el("line",{x1:-9,x2:-9,y1:24,y2:BOT,stroke:css("accent"),"stroke-width":2,visibility:"hidden","pointer-events":"none"},bar);
+})();
+
+// Tick each step fires on for one track, in bar ticks (4N per bar). Flam/Slop add one Feel clock tick to their tracks.
+// Lock and Late keep the kick on the straight 16ths.
+function laneTicks(lane){
+  const s=state.shuffle, N=curRes();
+  if(state.straight||(KICK_LOCKED.includes(feelKey())&&lane==="BD")) return ALL.map(k=>k*N/4);
+  const d=(FEEL_DELAY[feelKey()]||[]).includes(lane)?N/feelClock().N:0;
+  const held=k=>!(feelKey()==="Slop"&&SLOP_ONLY_WITH_KS.includes(lane))||pattern.BD[k]||pattern.SD[k];
+  return lanePositions(state.timing,s,lane).map((p,k)=>p+(held(k)?d:0));
+}
+// Rolls: after a Hihat 2 step, retrigger on ticks up to (not including) the next step.
+function rollTicks(){
+  if(state.straight||feelKey()!=="Rolls") return [];
+  const N=curRes(), pos=lanePositions(state.timing,state.shuffle,"H2"), fc=feelClock(), every=fc.every??rollsEveryTick(fc.row);
+  const u=N/fc.N, snap=x=>Math.abs(x-Math.round(x))<1e-6?Math.round(x):x; // Feel clock ticks, in bar ticks
+  const out=[];
+  for(let k=0;k<16;k++){
+    if(!pattern.H2[k]||linearMuted("H2",k)) continue; // a step Linear silences doesn't start a roll
+    const end=snap((k<15?pos[k+1]:4*N)/u);
+    for(let t=Math.floor(snap(pos[k]/u))+1;t<end;t++) if(every||t%2===0) out.push({t:t*u,k});
+  }
+  return out;
+}
+// Stut: trap-style Hihat 1 ratchets, placed by rule (see Sources):
+//  A. a hat on step 7 or 15 (end of each half bar) rolls in 32nd triplets until the next hat, at most 2 steps;
+//  B. the hat just before a snare, and the last hat of the bar, gets one 32nd pickup.
+// The ratchets split the space between where the steps actually play, so they swing or trip with the Timing,
+// and they get louder into the target. Only hats that play can ratchet.
+function stutTicks(){
+  if(state.straight||feelKey()!=="Stut") return [];
+  const N=curRes(), pos=laneTicks("H1"), H=pattern.H1, at=k=>k<16?pos[k]:4*N, out=[];
+  const plays=(l,k)=>pattern[l][k]&&!linearMuted(l,k);
+  for(let k=0;k<16;k++){
+    if(!plays("H1",k)) continue;
+    let end=k+1, per=0;
+    if(k===6||k===14){ while(end<16&&end<k+2&&!H[end]) end++; per=3; }  // A: 32nd triplets, 3 per 16th
+    else if(k===15||plays("SD",k+1)) per=2;                                // B: one 32nd pickup
+    if(!per) continue;
+    const m=per*(end-k), span=at(end)-pos[k];
+    for(let j=1;j<m;j++) out.push({t:pos[k]+span*j/m,k,lvl:0.35+0.45*j/(m-1||1)});
+  }
+  return out;
+}
+function computeTargets(){ const N=curRes(), t={}; for(const L of LANES) t[L.key]=laneTicks(L.key).map(p=>p/(4*N)); return t; }
+const cloneT=o=>Object.fromEntries(Object.entries(o).map(([k,v])=>[k,v.slice()]));
+let target=computeTargets(), shown=cloneT(target), anim=null, animating=false;
+function drawRolls(){
+  gRoll.innerHTML="";
+  if(animating) return;
+  const N=curRes();
+  for(const [lane,list] of [["H2",rollTicks()],["H1",stutTicks()]]){ const y=laneY[lane];
+    for(const r of list){
+      const x=BX(r.t/(4*N));
+      el("line",{x1:x,x2:x,y1:y-7,y2:y+7,stroke:css("text"),"stroke-width":2,"stroke-linecap":"round",opacity:muted[lane]?.2:.6},gRoll);
+    } }
+}
+function colorFor(d){ return Math.abs(d)<1e-6?css("on"):(d>0?css("late"):css("early")); }
+function drawBar(){
+  for(const L of LANES){
+    L.label.setAttribute("text-decoration",muted[L.key]?"line-through":"none");
+    L.label.setAttribute("opacity",muted[L.key]?.45:1);
+    L.sub.textContent=muted[L.key]?"muted":KITS[state.kit][L.key];
+    const m=!!muted[L.key];
+    L.mute.setAttribute("aria-pressed",String(m));
+    L.mute.rect.setAttribute("fill",m?css("orange"):css("chip"));
+    L.mute.rect.setAttribute("stroke",m?css("orange"):css("line"));
+    L.mute.txt.setAttribute("fill",m?"#fff":css("muted"));
+  }
+  for(const L of LANES) for(let k=0;k<16;k++){
+    const g=hits[L.key][k], on=pattern[L.key][k], f=shown[L.key][k], moved=Math.abs(f-k/16)>1e-6;
+    const c=colorFor(target[L.key][k]-k/16);
+    g.empty.setAttribute("cx",BX(f)); g.empty.setAttribute("visibility",on?"hidden":"visible");
+    const lin=on&&linearMuted(L.key,k);
+    g.dot.setAttribute("opacity",muted[L.key]?.25:lin?.85:1);
+    g.dot.setAttribute("stroke",lin?c:"none"); g.dot.setAttribute("stroke-width",lin?1.5:0); g.dot.setAttribute("stroke-dasharray",lin?"3 2":"none");
+    g.dot.setAttribute("cx",BX(f)); g.dot.setAttribute("fill",lin?css("panel"):c); g.dot.setAttribute("visibility",on?"visible":"hidden");
+    g.ghost.setAttribute("visibility",on&&moved?"visible":"hidden");
+    g.link.setAttribute("x1",BX(k/16)); g.link.setAttribute("x2",BX(f)); g.link.setAttribute("stroke",c);
+    g.link.setAttribute("visibility",on&&moved?"visible":"hidden");
+  }
+  drawRolls();
+  if(hoverCell) placeHover(hoverCell);
+}
+function drawSlots(){
+  gSlots.innerHTML="";
+  if(state.shuffle===0) return;
+  // Trip lands on multiples of 4 ticks: N/4 slots per beat, N per bar. DRNK has N slots per beat: 4N per bar.
+  const n=state.timing==="Trip"?DATA.N[state.shuffle]:tupletOf(state.timing,state.shuffle)?4*tupletOf(state.timing,state.shuffle).n:state.timing==="TRIO"?6:0;
+  for(let j=0;n&&j<=n;j++) el("line",{x1:BX(j/n),x2:BX(j/n),y1:56,y2:64,stroke:css("slot"),"stroke-width":1.5},gSlots);
+}
+function retarget(){
+  target=computeTargets();
+  const from=cloneT(shown), t0=performance.now(), dur=260;
+  cancelAnimationFrame(anim);
+  if(document.hidden){ animating=false; shown=cloneT(target); drawBar(); return; }
+  animating=true;
+  const step=now=>{ const p=Math.min(1,(now-t0)/dur), e=1-Math.pow(1-p,3);
+    for(const L of LANES) shown[L.key]=from[L.key].map((f,k)=>f+(target[L.key][k]-f)*e);
+    if(p>=1) animating=false;
+    drawBar(); if(p<1) anim=requestAnimationFrame(step); };
+  anim=requestAnimationFrame(step);
+}
+
+// ---------- drawing on the grid: nearest step + nearest track, drag to paint ----------
+let paintValue=null, hoverCell=null;
+function svgPoint(e){ const p=bar.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(bar.getScreenCTM().inverse()); }
+function cellAt(e){
+  const p=svgPoint(e), top=laneY[LANES[0].key]-24, bottom=laneY[LANES[LANES.length-1].key]+24;
+  if(p.x<X0-12||p.x>X1+16||p.y<top||p.y>bottom) return null;
+  let lane=LANES[0]; for(const L of LANES) if(Math.abs(laneY[L.key]-p.y)<Math.abs(laneY[lane.key]-p.y)) lane=L;
+  const sl=shown[lane.key]; let k=0; for(let i=1;i<16;i++) if(Math.abs(BX(sl[i])-p.x)<Math.abs(BX(sl[k])-p.x)) k=i;
+  return {lane:lane.key,k};
+}
+function placeHover(c){ hoverRing.setAttribute("cx",BX(shown[c.lane][c.k])); hoverRing.setAttribute("cy",laneY[c.lane]); hoverRing.setAttribute("visibility","visible"); }
+function setHover(c){ hoverCell=c; if(c) placeHover(c); else hoverRing.setAttribute("visibility","hidden"); }
+function paint(c){
+  if(pattern[c.lane][c.k]===paintValue) return;
+  pattern[c.lane][c.k]=paintValue;
+  if(beatIdx!==CUSTOM) edited=true;
+  drawBar();
+  if(paintValue&&!muted[c.lane]){ ensureAudio(); voice(c.lane,ctx.currentTime+0.005,c.k); }
+}
+bar.addEventListener("pointerdown",e=>{
+  const c=cellAt(e); if(!c) return;
+  e.preventDefault(); try{ bar.setPointerCapture(e.pointerId); }catch(err){}
+  paintValue=pattern[c.lane][c.k]?0:1; paint(c); setHover(c);
+});
+bar.addEventListener("pointermove",e=>{ const c=cellAt(e); setHover(c); if(paintValue!==null&&c) paint(c); });
+function endPaint(){ if(paintValue===null) return; paintValue=null; if(beatIdx===CUSTOM) saveCustom(); drawBeats(); }
+bar.addEventListener("pointerup",endPaint);
+bar.addEventListener("pointercancel",endPaint);
+bar.addEventListener("pointerleave",()=>{ if(paintValue===null) setHover(null); });
+
+// ---------- half-bar view ----------
+const beat=document.getElementById("beat"), B0=40, B1=960;
+function drawHalf(){
+  beat.innerHTML="";
+  // The bar-long styles (BALL, TOSS, SWAY, LIMP) get the full bar up close. Everything else repeats every half bar.
+  // DROP and FLOP draw two rows: Kick and Snare on one grid, the other tracks on the other.
+  const whole=!!TIMINGS.find(t=>t.key===state.timing).bar, steps=whole?16:8, sp=splitOf(state.timing), split=!!sp;
+  const s=state.shuffle, mod=modOn(state.timing), dl=isDeluge(state.timing)&&!mod, N=curRes(), span=steps*N/4, pos=positions(state.timing,s), BXh=t=>B0+(B1-B0)*t/span;
+  const tup=tupletOf(state.timing,s), tn=tup?tup.n:0;
+  let rows=split?[{label:`${laneNames(sp).replace(" and ",", ")} · ${sp.from}`,pos:positions(sp.from,s),slots:sp.from==="DRNK"?tn:0},{label:`Other tracks · ${sp.rest}`,pos:positions(sp.rest,s),slots:sp.rest==="DRNK"?tn:0}]:[{pos,slots:tn}];
+  if(isVoice(state.timing)){ const groups=[]; // per-track styles: one row per group of tracks that land together
+    for(const L of LANES){ const p=lanePositions(state.timing,s,L.key), g=groups.find(G=>G.pos.every((x,k)=>Math.abs(x-p[k])<1e-6));
+      if(g) g.names.push(L.name); else groups.push({names:[L.name],pos:p}); }
+    rows=groups.length>1?groups.map(G=>({label:G.names.join(", "),pos:G.pos,slots:0})):[{pos:groups[0].pos,slots:0}]; }
+  const multi=rows.length>1;
+  rows.forEach((R,i)=>R.y=multi?70+i*80:74);
+  beat.setAttribute("viewBox",`0 0 1000 ${multi?140+(rows.length-1)*80:150}`);
+  for(const R of rows){
+    const y=R.y, H=multi?28:40;
+    el("line",{x1:B0,x2:B1,y1:y,y2:y,stroke:css("line"),"stroke-width":1.5},beat);
+    if(R.label){ const lt=el("text",{x:B1,y:y-H-4,"text-anchor":"end",fill:css("text"),"font-size":12,"font-weight":600},beat); lt.textContent=R.label; }
+    // Deluge: 96 ticks per beat is too dense to draw one by one, so marks every 4 ticks, taller on the straight 16ths
+    for(let t=0;t<=span;t+=dl?4:1){
+      const edge=t%N===0, major=dl?t%DELUGE.STEP===0:state.timing==="Trip"&&t%4===0, h=edge?H:major?(dl?10:14):(dl?4:6);
+      el("line",{x1:BXh(t),x2:BXh(t),y1:y-h,y2:y+h,stroke:edge?css("beat"):major?css("slot"):css("grid"),"stroke-width":edge?1.6:1},beat);
+    }
+    if(state.timing==="PROG"){ const [a,b]=DELUGE.PROG_GROUPS; // where the 7 and 9 group steps land at level 6
+      for(let j=1;j<a+b;j++){ const t=j<a?j*192/a:192+(j-a)*192/b; el("line",{x1:BXh(t),x2:BXh(t),y1:y-20,y2:y+20,stroke:css(j===a?"accent":"muted"),"stroke-width":1,"stroke-opacity":.7},beat); } }
+    if(state.timing==="TRIO") for(let j=1;j<6;j++) el("line",{x1:BXh(j*64),x2:BXh(j*64),y1:y-20,y2:y+20,stroke:css("muted"),"stroke-width":1,"stroke-opacity":.7},beat); // quarter-note triplets
+    const n=R.slots;
+    for(let j=1;n&&j<2*n;j++) if(j%n) el("line",{x1:BXh(j*N/n),x2:BXh(j*N/n),y1:y-20,y2:y+20,stroke:css("muted"),"stroke-width":1,"stroke-opacity":.7},beat);
+    for(let j=0;n&&j<2*n;j++) if(!tup.slots.includes(j%n)) // hollow dots: slots no step plays on
+      el("circle",{cx:BXh(j*N/n),cy:y,r:5,fill:css("panel"),stroke:css("muted"),"stroke-width":1.5},beat);
+    for(let k=0;k<steps;k++){
+      const st=k*N/4, p=R.pos[k], d=p-st, c=colorFor(d/N);
+      if(Math.abs(d)>1e-9){
+        el("circle",{cx:BXh(st),cy:y,r:9,fill:"none",stroke:css("ghost"),"stroke-width":1.5},beat);
+        el("line",{x1:BXh(st),x2:BXh(p),y1:y,y2:y,stroke:c,"stroke-width":3,"stroke-opacity":.5},beat);
+      }
+      el("circle",{cx:BXh(p),cy:y,r:11,fill:c},beat);
+      const nm=el("text",{x:BXh(p),y:y+4,"text-anchor":"middle",fill:css("panel"),"font-size":11,"font-weight":700},beat); nm.textContent=k+1;
+      const tl=el("text",{x:BXh(p),y:y+(multi?24:32)+(k%2?14:0),"text-anchor":"middle",fill:css("muted"),"font-size":11},beat); tl.textContent=fmtTick(p);
+    }
+  }
+  [...Array(steps/4).keys()].map(b=>[`beat ${b+1}`,BXh(b*N)+4,"start"]).concat(multi?[]:[[whole?"next bar":"beat 3",B1-4,"end"]]).forEach(([s_,x,a])=>{ const t=el("text",{x,y:multi?28:22,"text-anchor":a,fill:css("muted"),"font-size":12},beat); t.textContent=s_; });
+  if(!multi){ const nt=el("text",{x:BXh(N/2),y:22,"text-anchor":"middle",fill:css("muted"),"font-size":12},beat); nt.textContent=`${N} ticks per beat`; }
+  document.getElementById("halfTitle").textContent=mod&&s?`Half a bar up close: ${state.timing} on the module's ${N}-tick beat`:whole&&isVoice(state.timing)?`The whole bar up close: ${state.timing}, track by track`:whole?`The whole bar up close: ${state.timing}'s ${{BALL:"one-bar drop",TOSS:"one-bar throw",SWAY:"one-bar wave",LIMP:"uneven beats",TRIO:"quarter-note triplet pull",PROG:"7+9 split"}[state.timing]}`:"Half a bar up close: "+(
+    state.timing==="DRNK"?"DRNK's 1-beat window, twice over":state.timing==="DEEP"?"DEEP's 1-beat window, twice over":state.timing==="CLSTR"?"CLSTR's 1-beat window, twice over":state.timing==="FOLD"?"FOLD's 1-beat window, twice over":state.timing==="AFOLD"?"AFOLD breathes in on beat 1, out on beat 2":split?`${state.timing}'s two grids, one beat at a time`:isVoice(state.timing)?`${state.timing}, track by track`:state.timing==="HOPP"?"HOPP's 2-step pair, four times over":"the firmware's 8-step cycle");
+  let note;
+  if(mod&&s){ // MODULE 36: how far the whole-tick version sits from the 96-tick one
+    const was=state.mod; state.mod=false; const ref=LANES.map(L=>lanePositions(state.timing,s,L.key)); state.mod=was;
+    const err=Math.max(...LANES.flatMap((L,i)=>lanePositions(state.timing,s,L.key).map((p,k)=>Math.abs(p/N-ref[i][k]/96)*60000/state.bpm)));
+    note=`MODULE 36: each mark is one tick of a ${N}-tick beat, the grid the module would use for this level. Numbers under the dots are the tick each step plays on. `+
+      (state.timing==="DRNK"?`DRNK is Trip, so this is exactly Trip at Shuffle ${s}.`:state.timing==="CLSTR"?`Each of the ${tn} slots is 4 ticks, so this is exactly the 96-tick version.`:`Every hit is within ${err.toFixed(1)} ms of the 96-tick version at ${state.bpm} bpm.`)+
+      (state.timing==="CLSTR"?" Like the module's own rows, this is a plain table: the same 4 step lengths every beat.":"")+feelNote();
+  } else if(mod){
+    note="MODULE 36: straight 16ths on a 16-tick beat. Swing is off, so every step plays on its straight 16th."+feelNote();
+  } else if(dl){
+    note="Small marks are every 4 ticks, and the taller ones are the straight 16ths. Numbers under the dots are the tick each step plays on. ";
+    if(s===0) note+="Swing is off, so every step plays on its straight 16th.";
+    else if(state.timing==="TOSS"){ const g=ballGaps(s).reverse(); note+=`BALL in reverse: each 16th lasts ${+(1/DELUGE.BALL_R[s-1]).toFixed(4)} times the one before, so the bar starts tight (the first 16th is ${fmtTick(g[0])} ticks) and opens out toward the end (the last is ${fmtTick(g[15])}). Everything lands early, by the amounts BALL lands late.`; }
+    else if(state.timing==="SWAY"){ const M=DELUGE.SWAY_M[s-1]; note+=`One wave per bar: slowest at the bar line, fastest around beat 3, with the tempo swinging ±${Math.round(2*Math.PI*M/(4*N)*100)}%. Beats 1 and 3 stay on the grid, beat 2 lands ${M} ticks late and beat 4 lands ${M} ticks early.`; }
+    else if(state.timing==="LIMP"){ const b=limpBeats(s); note+=`Beats 1 to 3 last ${fmtTick(b.short)} ticks each and beat 4 lasts ${fmtTick(b.long)} (${b.R.toFixed(2)}:1). Each beat's four 16ths split it evenly. At level 6 that's 2+2+2+3, the 9/8 aksak limp.`; }
+    else if(state.timing==="VOODOO"){ const v=DELUGE.VOODOO_MS, f=s/6; note+=`Each row is a group of tracks that land together. The drag is set in ms, so it holds at any tempo: Kick ${+(v.BD*f).toFixed(1)} ms, Snare ${+(v.SD*f).toFixed(1)} ms, Perc 1 (the clap, not quite with the snare) ${+(v.P1*f).toFixed(1)} ms, and Perc 2 ${+(v.P2*f).toFixed(1)} ms, standing in for the bass that drags furthest. The hats are the straight reference.`; }
+    else if(state.timing==="FOLD") note+=`One grid for every track, and every beat the same: the "e" ${fmtTick(14.4*s/6)} ticks late and the "a" ${fmtTick(14.4*s/6)} early, folding in toward the "&". They pass the 8th-note triplets a little past level 3 and reach the quintuplet slots at level 6. Downbeats and every "&" stay put.`;
+    else if(state.timing==="CLSTR"){ const n=tn, sl=clstrSlots(s), sh=DELUGE.CLSTR_SHIFTED[s-1]; note+=`The tallest thin marks are the ${n} slots each beat is cut into, and hollow dots are the slots left empty. Where DRNK leaves a gap in the middle, CLSTR clusters the "e", "&" and "a" on slots ${sl.slice(1).map(x=>x+1).join(", ")} of ${n}. `+(sh?(s===6?`At this level the cluster is pushed all the way right, onto the last three slots, jammed against the next downbeat: the "e" lands well after where the straight "&" would.`:`At this level the cluster is shifted right of the middle, so it leans late, hard: the "e" lands around where the straight "&" would.`):n%2?`With ${n} slots there's no slot exactly halfway, so the cluster leans into the second half of the beat.`:`With ${n} slots the "&" sits exactly halfway.`); }
+    else if(state.timing==="AFOLD") note+=`One grid for every track, breathing across the half bar. Beat 1 (and beat 3) folds in: the "e" ${fmtTick(14.4*s/6)} ticks late and the "a" ${fmtTick(14.4*s/6)} early, bunching toward the "&". Beat 2 (and beat 4) folds out at half the amount: the "e" ${fmtTick(7.2*s/6)} ticks early and the "a" ${fmtTick(7.2*s/6)} late, framing the backbeat. Downbeats and every "&" stay put.`;
+    else if(state.timing==="XFOLD") note+=`Each row is a group of tracks that land together. The hats and percs fold in toward the "&": the "e" of each beat ${fmtTick(14.4*s/6)} ticks late and the "a" ${fmtTick(14.4*s/6)} ticks early. Kick and Snare fold the other way, out toward the beats, at half the amount. This is the per-track FOLD; it needs each track to fire on its own ticks, which the module can't do without a code change.`;
+    else if(state.timing==="LOTUS"){ const r=l=>(50+(DELUGE.LOTUS_PCT[l]-50)*s/6).toFixed(1); note+=`Each row is a group of tracks that swing at the same ratio. The off 16th of each 8th moves: Kick ${r("BD")}% (straight), Snare ${r("SD")}% (heading for triplet 2:1), hats ${r("H1")}% (dotted 3:1) and percs ${r("P1")}% (4:1). Several grids at once, none of them the same.`; }
+    else if(state.timing==="SKEW"){ const e=DELUGE.SKEW_END, f=s/6; note+=`Each row is a group of tracks on its own clock. The drift grows step by step: by step 16 the hats run ${fmtTick(-e.H1*f*15/16)} ticks early, the Snare ${fmtTick(e.SD*f*15/16)} late and the percs ${fmtTick(e.P1*f*15/16)} late, while the Kick holds the grid. Every clock resyncs on the next downbeat.`; }
+    else if(state.timing==="PROG") note+=`The thin marks show where the steps land at level 6: 7 even slots across the first half (7 in the time of 8) and 9 across the second (9 in the time of 8), with the red mark at the join. At level ${s} the steps move ${s}/6 of the way there, so the first half stretches and the second half rushes back to the bar line.`;
+    else if(state.timing==="TRIO") note+=`The tallest thin marks are the bar's six quarter-note triplets. Steps 1, 4, 6, 9, 12 and 14 are pulled ${s}/6 of the way onto them, the steps between spread evenly, and the four downbeats never move.`;
+    else if(state.timing==="DEEP"){ const a=DELUGE.DEEP_8[s-1], b=DELUGE.DEEP_16[s-1], g=[1,2,3,4].map(k=>fmtTick((k<4?pos[k]:N)-pos[k-1]));
+      note+=`Two levels of swing: each beat's 8ths split ${a}:${+(100-a).toFixed(1)}, then each 8th's 16ths split ${b}:${100-b} inside it. The gaps shrink across the beat (${g.join(", ")} ticks), so every beat ends in a small pile-up.`; }
+    else if(state.timing==="BALL"){ const g=ballGaps(s); note+=`Each 16th lasts ${DELUGE.BALL_R[s-1]} times the one before, so the bar starts loose (the first 16th is ${fmtTick(g[0])} ticks) and stacks up toward the end (the last is ${fmtTick(g[15])}). The next bar's downbeat lands on time and the ball drops again.`; }
+    else if(split){ const e=DELUGE.HOPP[s-1], hopp=`HOPP level ${s}, the even 16th of each pair on tick ${e} of 48 (${swingPct(e)}% swing)`, drnk=`DRNK level ${s}, ${tn} slots per beat with steps on slots ${DELUGE.DRNK_SLOTS[s-1].map(x=>x+1).join(", ")} (hollow dots are the empty slots)`;
+      note+=`Top row: ${laneNames(sp)} on ${sp.from==="HOPP"?hopp:drnk}. Bottom row: the other ${["","five","four"][sp.lanes.length]} tracks on ${sp.rest==="HOPP"?hopp:drnk}.`; }
+    else if(state.timing==="HOPP"){ const e=DELUGE.HOPP[s-1]; note+=`From the table: the even 16th of each pair lands on tick ${e} of 48 (${swingPct(e)}% swing).`; }
+    else note+=`The tallest thin marks are the ${tn} slots each beat is cut into, and hollow dots are the slots left empty. Steps play on slots ${DELUGE.DRNK_SLOTS[s-1].map(x=>x+1).join(", ")}. The manual's caption: ${DELUGE.DRNK_CAPTION[s-1].toLowerCase()}.`;
+    note+=feelNote();
+  } else {
+    const lens=DATA[state.timing][s].slice(0,8).join(", ");
+    note=(state.timing==="Trip"&&s>0
+      ? `Each small mark is one tick. Taller marks are the ${N/4} tuplet slots per beat that Trip lands on. `
+      : "Each mark is one tick. Numbers under the dots are the tick each step fires on. ")+`Step lengths from the table: ${lens}.`+feelNote();
+  }
+  document.getElementById("beatnote").textContent=note;
+  const spb=60000/state.bpm;
+  const cols=rows.length>1?rows:[{label:whole?"Played tick":"Firmware tick",pos}], slim=rows.length>2; // 3+ rows: offsets only
+  let h=`<tr><th>Step</th><th>Straight tick</th>${cols.map(R=>slim?`<th>${R.label}</th>`:`<th>${rows.length>1?R.label.replace(" · "," on "):R.label}</th><th>Offset at ${state.bpm} bpm</th>`).join("")}</tr>`;
+  for(let k=0;k<steps;k++){
+    const st=k*N/4;
+    h+=`<tr><td>${k+1}</td><td class="mono">${Number.isInteger(st)?st:st.toFixed(2)}</td>`+cols.map(R=>{ const p=R.pos[k], ms=(p-st)/N*spb, cls=Math.abs(ms)<0.05?"":(ms>0?"late":"early");
+      return slim?`<td class="${cls} mono">${fmtMs(ms)}</td>`:`<td class="mono">${fmtTick(p)}</td><td class="${cls} mono">${fmtMs(ms)}</td>`; }).join("")+"</tr>";
+  }
+  document.getElementById("tbl").innerHTML=h;
+}
+
+function feelNote(){
+  const f=feelKey(), fc=feelClock(), tick=(60000/state.bpm/fc.N).toFixed(1), every=fc.every??rollsEveryTick(fc.row);
+  const dl=isDeluge(state.timing)&&!modOn(state.timing), unit=dl?`1 Feel tick (1/${fc.N} beat, ${tick} ms)`:`1 tick (${tick} ms)`;
+  const model=modOn(state.timing)?` On the module grid that's one of this level's ${fc.N} ticks per beat.`:dl?` The Deluge has no Feels: this runs them on ${(state.timing==="DRNK"||splitOf(state.timing)?.rest==="DRNK")&&state.shuffle?`Trip's Shuffle ${state.shuffle} clock, since DRNK is Trip`:"Stolperbeats' straight clock"}.`:"";
+  if(f==="Flam") return ` Flam: Kick and Snare fire ${unit} after each step.`+model;
+  if(f==="Slop") return ` Slop: Kick and Snare fire ${unit} after each step, and the hihats do too on steps where Kick or Snare also hits.`+model;
+  if(f==="Rolls") return ` Rolls: Hihat 2 retriggers on ${every?"every":"every second"} Feel tick (every ${every?tick:(2*60000/state.bpm/fc.N).toFixed(1)} ms) until the next step.`+model;
+  if(f==="Stut"){ const n=stutTicks().length; return ` Stut: Hihat 1 rolls in 32nd triplets on steps 7 and 15 (until the next hat, up to 2 steps) and gets a 32nd pickup before each snare and at the end of the bar, louder into each target. ${n?`${n} ratchet${n>1?"s":""} this bar.`:"No hats on those steps in this beat, so nothing ratchets."}`; }
+  if(f==="Lock") return " Lock: the Kick stays on the straight 16ths. The other five tracks land where the table puts them.";
+  if(f==="Late") return ` Late: the Kick stays on the straight 16ths and the Snare fires ${unit} after each step. The other four tracks land where the table puts them.`+model;
+  return "";
+}
+function describe(){
+  const s=state.shuffle, N=curRes(), pos=positions(state.timing,s);
+  if(isDeluge(state.timing)){
+    if(s===0) return "Swing off. Straight 16ths, nothing moves.";
+    if(modOn(state.timing)){ const N=curRes(), b=pos.slice(0,4), msA=t=>(Math.abs(t)/N*60000/state.bpm).toFixed(1)+" ms";
+      if(state.timing==="DRNK") return `Exactly Trip at Shuffle ${s}: ${DELUGE.DRNK_N[s-1]} slots per beat, steps on slots ${DELUGE.DRNK_SLOTS[s-1].map(x=>x+1).join(", ")}.`;
+      if(state.timing==="HOPP") return `Swing ${(b[1]/(N/2)*100).toFixed(1)}% on a ${N}-tick beat: every second 16th lands ${msA(b[1]-N/4)} late.`;
+      if(state.timing==="DEEP") return `On a ${N}-tick beat, steps land on ticks ${b.join(", ")} of each beat: DEEP in whole ticks.`;
+      if(state.timing==="CLSTR") return `${N/4} slots of 4 ticks, clustered on ${clstrSlots(s).slice(1).map(x=>x+1).join(", ")}: steps land on ticks ${b.join(", ")} of each beat.`;
+      return `On a ${N}-tick beat, steps land on ticks ${b.join(", ")} of each beat: every beat folds in.`; }
+    const ms=t=>fmtMs(t/N*60000/state.bpm);
+    const msAt=t=>(Math.abs(t)/N*60000/state.bpm).toFixed(1)+" ms";
+    if(state.timing==="TOSS"){ const g=ballGaps(s).reverse(); return `Each 16th is ${+(1/DELUGE.BALL_R[s-1]).toFixed(3)}× the last: ${fmtTick(g[0])} ticks up to ${fmtTick(g[15])}. Beat 3 lands ${msAt(pos[8]-2*N)} early.`; }
+    const lm=(l,k)=>msAt(lanePositions(state.timing,s,l)[k]-k*DELUGE.STEP);
+    if(state.timing==="VOODOO") return `Kick ${lm("BD",0)} late, Snare ${lm("SD",0)}, clap ${lm("P1",0)}, Perc 2 ${lm("P2",0)}. Hats on the grid.`;
+    if(state.timing==="FOLD") return `Every beat folds in toward the "&": "e" ${lm("H1",1)} late, "a" ${lm("H1",3)} early. Downbeats stay.`;
+    if(state.timing==="CLSTR"){ const n=DELUGE.CLSTR_N[s-1], sh=DELUGE.CLSTR_SHIFTED[s-1]; return `${n} slots per beat, clustered on ${clstrSlots(s).slice(1).map(x=>x+1).join(", ")}${sh?", shifted right":n%2?", leaning late":""}: "e" ${msAt(pos[1]-DELUGE.STEP)} late, ${Math.abs(pos[2]-2*DELUGE.STEP)<1e-6?'"&" on time':`"&" ${msAt(pos[2]-2*DELUGE.STEP)} late`}.`; }
+    if(state.timing==="AFOLD") return `Beats 1 and 3 fold in ("e" ${lm("H1",1)} late, "a" ${lm("H1",3)} early). Beats 2 and 4 fold out ("e" ${lm("H1",5)} early, "a" ${lm("H1",7)} late).`;
+    if(state.timing==="XFOLD") return `Hats fold in ("e" ${lm("H1",1)} late, "a" ${lm("H1",3)} early). Kick and Snare fold out ("e" ${lm("BD",1)} early, "a" ${lm("BD",3)} late).`;
+    if(state.timing==="LOTUS"){ const r=l=>(50+(DELUGE.LOTUS_PCT[l]-50)*s/6).toFixed(1); return `Kick straight, Snare swings ${r("SD")}%, hats ${r("H1")}%, percs ${r("P1")}%.`; }
+    if(state.timing==="SKEW") return `By step 16 the hats run ${lm("H1",15)} early, Snare ${lm("SD",15)} late, percs ${lm("P1",15)} late. All resync on the one.`;
+    if(state.timing==="PROG") return `Bar split 7+9: the first half stretches, the second rushes. Step 8 lands ${msAt(pos[7]-7*DELUGE.STEP)} late, beat 3 ${msAt(pos[8]-2*N)} late.`;
+    if(state.timing==="TRIO") return `Off-beats bend ${s}/6 of the way to quarter-note triplets. Steps 4 and 12 land ${msAt(pos[3]-3*DELUGE.STEP)} early, 6 and 14 ${msAt(pos[5]-5*DELUGE.STEP)} late.`;
+    if(state.timing==="DEEP") return `8ths swing ${DELUGE.DEEP_8[s-1]}%, and 16ths ${DELUGE.DEEP_16[s-1]}% inside them. The "&" lands ${msAt(pos[2]-2*DELUGE.STEP)} late, the "e" ${msAt(pos[1]-DELUGE.STEP)}.`;
+    if(state.timing==="SWAY"){ const M=DELUGE.SWAY_M[s-1]; return `Tempo swings ±${Math.round(2*Math.PI*M/(4*N)*100)}% across the bar. Beat 2 lands ${msAt(M)} late, beat 4 ${msAt(M)} early.`; }
+    if(state.timing==="LIMP"){ const b=limpBeats(s); return `Beat 4 lasts ${b.R.toFixed(2)}× each other beat. Beats 2, 3 and 4 land ${[4,8,12].map(k=>(Math.abs(pos[k]-k*N/4)/N*60000/state.bpm).toFixed(0)).join(", ")} ms early.`; }
+    if(state.timing==="BALL"){ const g=ballGaps(s); return `Each 16th is ${DELUGE.BALL_R[s-1]}× the last: ${fmtTick(g[0])} ticks down to ${fmtTick(g[15])}. Beat 3 lands ${((pos[8]-2*N)/N*60000/state.bpm).toFixed(1)} ms late.`; }
+    const sp=splitOf(state.timing);
+    if(sp){ const one=sp.lanes.length===1, says=(g,sing)=>g==="HOPP"?`swing${sing?"s":""} ${swingPct(DELUGE.HOPP[s-1])}% like HOPP`:`trip${sing?"s":""} on ${DELUGE.DRNK_N[s-1]} slots per beat like DRNK`;
+      return `${laneNames(sp)} ${says(sp.from,one)}. The rest ${says(sp.rest,false)}.`; }
+    if(state.timing==="HOPP"){ const e=DELUGE.HOPP[s-1]; return `Swing ${swingPct(e)}%: every second 16th lands ${e-DELUGE.STEP} ticks late (${ms(e-DELUGE.STEP)}).`; }
+    return `${DELUGE.DRNK_N[s-1]} slots per beat. Steps land on slots ${DELUGE.DRNK_SLOTS[s-1].map(x=>x+1).join(", ")}. ${DELUGE.DRNK_CAPTION[s-1]}.`;
+  }
+  const row=DATA[state.timing][s];
+  if(s===0) return "Straight 16ths. Nothing moves.";
+  const shift=pos.slice(0,8).map((p,k)=>p-k*N/4);
+  switch(state.timing){
+    case "Trip":  return `Grid of ${N/4} slots per beat. Steps land on slots ${pos.slice(0,4).map(p=>p/4+1).join(", ")}.`;
+    case "Shake": return `Swing ${(row[0]/(row[0]+row[1])*100).toFixed(1).replace(/\.0$/,"")}% (${row[0]}:${row[1]} ticks). Every second 16th lands late.`;
+    case "Push":  return `Steps 2 to 4 of each beat land ${shift[1]} tick${shift[1]>1?"s":""} late (${fmtMs(shift[1]/N*60000/state.bpm)}).`;
+    case "Clave": { const o=[1,2,4,5,7].map(k=>shift[k]); return `3:3:2 anchors (steps 1, 4, 7) stay on the grid. The others land ${Math.min(...o)} to ${Math.max(...o)} ticks late.`; }
+  }
+}
+function readout(){
+  const s=state.shuffle, N=curRes(), t=TIMINGS.find(x=>x.key===state.timing);
+  const maxMs=Math.max(...LANES.flatMap(L=>lanePositions(state.timing,s,L.key).map((p,k)=>Math.abs(p-k*N/4)/N*60000/state.bpm)));
+  document.getElementById("roMode").innerHTML=`<b>${state.timing}</b> · ${t.deluge?"Swing ":"Shuffle "}${s}<br><span class="sub">${t.blurb}</span>`;
+  document.getElementById("roDesc").textContent=describe();
+  document.getElementById("roRes").innerHTML=`${N} ticks<br><span class="sub">per beat</span>`;
+  document.getElementById("roMax").innerHTML=`${maxMs.toFixed(1)} ms<br><span class="sub">at ${state.bpm} bpm</span>`;
+}
+
+function update(){
+  const dl=isDeluge(state.timing); // every Timing runs 0-6, like the module's Shuffle; 0 is straight
+  shuffleIn.value=state.shuffle;
+  shuffleIn.setAttribute("aria-label",dl?"Swing amount, 0 to 6":"Shuffle amount, 0 to 6");
+  document.getElementById("knobName").textContent=dl?"Swing":"Shuffle";
+  document.getElementById("timingDesc").textContent=TIMINGS.find(t=>t.key===state.timing).desc;
+  document.getElementById("shufv").textContent=state.shuffle;
+  document.querySelectorAll("#detents span").forEach((d,i)=>d.classList.toggle("on",i===state.shuffle));
+  document.querySelectorAll("#timing [data-timing]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.timing===state.timing)));
+  drawArchive(); drawRes(); drawDl();
+  drawFeels(); drawSlots(); retarget(); drawHalf(); readout();
+}
+
+// ---------- controls ----------
+const tWrap=document.getElementById("timing"), tGroups={};
+for(const [g,cap] of [["stolper","Stolperbeats"],["deluge","Deluge"]]){
+  const grp=document.createElement("div"); grp.className="tgroup "+g;
+  grp.innerHTML=`<div class="tbtns"></div><span class="tcap">${cap}</span>`+(g==="deluge"?`<div class="resrow"><span class="reslabel">Grid</span><div class="seg" id="resSeg" role="group" aria-label="Grid for the green styles"><button data-mod="1" aria-pressed="true">MODULE 36</button><button data-mod="0" aria-pressed="false">DELUGE 96</button></div><span class="resnote" id="resNote"></span></div>`:"");
+  tWrap.appendChild(grp); tGroups[g]=grp;
+}
+// The archived Deluge styles stay hidden until MORE is pressed, then join the row in order, with LESS at the end.
+for(const t of TIMINGS){
+  const item=document.createElement("div"); item.className="feel-item"+(t.more?" archived":"");
+  item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false" title="${t.desc}"${t.deluge&&!t.more?' style="--lamp:#45c472"':""}>${t.key.toUpperCase()}</button>`; // the four main Deluge styles glow green
+  item.querySelector("button").addEventListener("click",()=>{ state.timing=t.key; update(); });
+  tGroups[t.deluge?"deluge":"stolper"].querySelector(".tbtns").appendChild(item);
+}
+const moreItem=document.createElement("div"); moreItem.className="feel-item";
+moreItem.innerHTML=`<button class="lampbtn morebtn" aria-expanded="false" aria-pressed="false">MORE<span class="caret" aria-hidden="true">▾</span></button>`;
+const moreBtn=moreItem.querySelector("button");
+tGroups.deluge.querySelector(".tbtns").appendChild(moreItem);
+let archiveOpen=false;
+moreBtn.addEventListener("click",()=>{ archiveOpen=!archiveOpen; drawArchive(); });
+// MORE lights up and shows the pick when an archived style is playing but folded away.
+// DELUGE 96 / MODULE 36: only the four green styles have module versions.
+document.querySelectorAll("#resSeg button").forEach(b=>b.addEventListener("click",()=>{ state.mod=b.dataset.mod==="1"; update(); }));
+function drawRes(){
+  const green=GREEN.includes(state.timing), row=document.querySelector(".resrow");
+  row.classList.toggle("off",!green);
+  document.querySelectorAll("#resSeg button").forEach(b=>{ b.setAttribute("aria-pressed",String((b.dataset.mod==="1")===state.mod)); b.disabled=!green; });
+  document.getElementById("resNote").textContent=!green?"Green styles only":state.mod?`${curRes()} ticks per beat`:"";
+}
+// Download tables covers the selected style only, and not the four factory Timings.
+function drawDl(){
+  const b=document.getElementById("dlTables"), ok=isDeluge(state.timing);
+  b.disabled=!ok; b.title=ok?`Download ${state.timing} as tables, Stolperbeats rows and MIDI grooves (zip)`:"The factory Timings aren't included";
+}
+function drawArchive(){
+  const t=TIMINGS.find(x=>x.key===state.timing), hidden=!!t.more&&!archiveOpen;
+  tGroups.deluge.classList.toggle("open",archiveOpen);
+  moreBtn.setAttribute("aria-expanded",String(archiveOpen)); moreBtn.setAttribute("aria-pressed",String(hidden));
+  moreBtn.innerHTML=`${archiveOpen?"LESS":hidden?t.key:"MORE"}<span class="caret" aria-hidden="true">${archiveOpen?"▴":"▾"}</span>`;
+}
+const det=document.getElementById("detents"), shuffleIn=document.getElementById("shuffle");
+for(let i=0;i<=6;i++){ const s=document.createElement("span"); s.textContent=i; s.addEventListener("click",()=>{ shuffleIn.value=i; state.shuffle=i; update(); }); det.appendChild(s); }
+shuffleIn.addEventListener("input",e=>{ state.shuffle=+e.target.value; update(); });
+document.getElementById("bpm").addEventListener("input",e=>{ state.bpm=+e.target.value; document.getElementById("bpmv").textContent=state.bpm+" bpm"; if(state.timing==="VOODOO") retarget(); drawHalf(); readout(); });
+document.getElementById("ab").addEventListener("click",e=>{
+  state.straight=!state.straight; e.currentTarget.setAttribute("aria-pressed",String(state.straight));
+  document.getElementById("knob").classList.toggle("bypassed",state.straight);
+  document.getElementById("feelrow").classList.toggle("bypassed",state.straight);
+  document.getElementById("timingrow").classList.toggle("bypassed",state.straight);
+  shuffleIn.setAttribute("aria-description",state.straight?"Bypassed: playing straight 16ths":"");
+  retarget();
+});
+const fWrap=document.getElementById("feels");
+FEELS.forEach((f,i)=>{
+  const item=document.createElement("div"); item.className="feel-item";
+  item.innerHTML=`<button class="lampbtn" style="--lamp:${f.lamp}" aria-pressed="false" title="${f.desc}">${f.key.toUpperCase()}</button>`;
+  item.querySelector("button").addEventListener("click",()=>{ state.feel=i; drawFeels(); retarget(); drawHalf(); });
+  fWrap.appendChild(item);
+});
+function drawFeels(){
+  document.getElementById("feelDesc").textContent=FEELS[state.feel].desc;
+  fWrap.querySelectorAll(".lampbtn").forEach((b,i)=>b.setAttribute("aria-pressed",String(i===state.feel)));
+  tGroups.stolper.style.setProperty("--lamp",FEELS[state.feel].lamp);
+}
+const themeBtn=document.getElementById("theme");
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  document.getElementById("themeLabel").textContent=t==="dark"?"Dark":"Light";
+  themeBtn.setAttribute("aria-label",t==="dark"?"Switch to light mode":"Switch to dark mode");
+}
+applyTheme(document.documentElement.getAttribute("data-theme")==="light"?"light":"dark");
+themeBtn.addEventListener("click",()=>{
+  const t=document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark";
+  applyTheme(t); try{ localStorage.setItem("stolperbeats-shuffle-map:theme",t); }catch(e){}
+});
+
+const lWrap=document.getElementById("linear");
+LINEARS.forEach((m,i)=>{ const b=document.createElement("button"); b.className="lampbtn tile"; b.style.setProperty("--lamp",m.lamp); b.textContent=m.key.toUpperCase(); b.title=m.desc;
+  b.addEventListener("click",()=>{ state.linear=i; drawLinear(); drawBar(); }); lWrap.appendChild(b); });
+function drawLinear(){
+  lWrap.querySelectorAll("button").forEach((b,i)=>b.setAttribute("aria-pressed",String(i===state.linear)));
+  document.getElementById("linearDesc").textContent=LINEARS[state.linear].desc;
+}
+drawLinear();
+const kWrap=document.getElementById("kits");
+for(const k of Object.keys(KITS)){ const b=document.createElement("button"); b.textContent=k; b.dataset.kit=k;
+  b.addEventListener("click",()=>{ state.kit=k; drawKits(); drawBar(); ensureAudio(); voice("BD",ctx.currentTime+0.01,0); }); kWrap.appendChild(b); }
+function drawKits(){ kWrap.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.kit===state.kit))); }
+
+const bWrap=document.getElementById("beats"), mineBtn=document.getElementById("mine"), clearBtn=document.getElementById("clear");
+BEATS.forEach((b,i)=>{ const btn=document.createElement("button"); btn.className="bbtn"; btn.innerHTML=`<span class="n">${i+1}</span>${b.name}`;
+  btn.addEventListener("click",()=>{ loadBeat(i); drawBeats(); drawBar(); }); bWrap.appendChild(btn); });
+mineBtn.addEventListener("click",()=>{ loadBeat(CUSTOM); drawBeats(); drawBar(); });
+clearBtn.addEventListener("click",()=>{ for(const L of LANES) custom[L.key].fill(0); saveCustom(); loadBeat(CUSTOM); drawBeats(); drawBar(); });
+function drawBeats(){
+  bWrap.querySelectorAll(".bbtn").forEach((b,i)=>b.setAttribute("aria-pressed",String(i===beatIdx)));
+  mineBtn.setAttribute("aria-pressed",String(beatIdx===CUSTOM));
+  clearBtn.style.visibility=beatIdx===CUSTOM?"visible":"hidden";
+  const count=LANES.reduce((n,L)=>n+custom[L.key].reduce((a,b)=>a+b,0),0);
+  document.getElementById("status").textContent=beatIdx===CUSTOM
+    ? (count?`· your beat, ${count} hit${count>1?"s":""}, saved in this browser`:"· your beat is empty. Click or drag on the grid to add hits")
+    : `· ${BEATS[beatIdx].name}${edited?" (edited)":""}`;
+}
+
+// ---------- audio: exact step times on the audio clock; changes apply from the next bar ----------
+let ctx=null, OUT=null, noiseBuf=null, playing=false, timer=null, raf=null, cur=null, evI=0, bars=[], openHat=null;
+function ensureAudio(){
+  if(!ctx){
+    ctx=new (window.AudioContext||window.webkitAudioContext)();
+    const master=ctx.createGain(), comp=ctx.createDynamicsCompressor();
+    master.gain.value=0.75; comp.threshold.value=-10; comp.ratio.value=4;
+    master.connect(comp).connect(ctx.destination); OUT=master;
+    noiseBuf=ctx.createBuffer(1,ctx.sampleRate,ctx.sampleRate);
+    const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
+  }
+  if(ctx.state!=="running") ctx.resume();
+}
+function env(g,t,peak,dur){ g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+0.002); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); }
+function osc(t,type,f0,f1,glide,dur,peak){
+  const o=ctx.createOscillator(), g=ctx.createGain(); o.type=type;
+  o.frequency.setValueAtTime(f0,t); if(f1) o.frequency.exponentialRampToValueAtTime(f1,t+glide);
+  env(g,t,peak,dur); o.connect(g).connect(OUT); o.start(t); o.stop(t+dur+0.05); return g;
+}
+function noise(t,dur,peak,filters){
+  const s=ctx.createBufferSource(); s.buffer=noiseBuf; let node=s;
+  for(const [type,f,q] of filters){ const b=ctx.createBiquadFilter(); b.type=type; b.frequency.value=f; if(q) b.Q.value=q; node.connect(b); node=b; }
+  const g=ctx.createGain(); env(g,t,peak,dur); node.connect(g).connect(OUT); s.start(t); s.stop(t+dur+0.05); return g;
+}
+function metal(t,dur,peak,hp){ // 808-style metallic hat: six detuned square waves
+  const g=ctx.createGain(), bp=ctx.createBiquadFilter(), h=ctx.createBiquadFilter();
+  bp.type="bandpass"; bp.frequency.value=10000; bp.Q.value=0.7; h.type="highpass"; h.frequency.value=hp;
+  env(g,t,peak,dur); bp.connect(h).connect(g).connect(OUT);
+  for(const f of [205.3,304.4,369.6,522.7,540,800]){ const o=ctx.createOscillator(); o.type="square"; o.frequency.value=f; o.connect(bp); o.start(t); o.stop(t+dur+0.05); }
+  return g;
+}
+function clap(t,f,tail,peak){ for(const d of [0,0.011,0.022]) noise(t+d,0.014,peak,[["bandpass",f,1.3]]); return noise(t+0.032,tail,peak*0.75,[["bandpass",f,1.1]]); }
+// lvl: 1 on the beat, softer on off-beat 16ths
+const VOICES={
+  "808":{
+    BD:t=>osc(t,"sine",150,47,0.07,0.8,1.0),
+    SD:t=>{ osc(t,"triangle",238,0,0,0.11,0.45); osc(t,"triangle",476,0,0,0.07,0.22); noise(t,0.17,0.32,[["highpass",1800]]); },
+    H1:(t,l)=>metal(t,0.05,0.34*l,7200),
+    H2:(t,l,dur)=>metal(t,dur,0.24*l,7200),
+    P1:t=>clap(t,1100,0.22,0.55),
+    P2:t=>osc(t,"sine",310,250,0.12,0.24,0.55)
+  },
+  "909":{
+    BD:t=>{ osc(t,"triangle",250,52,0.05,0.38,0.9); osc(t,"sine",120,50,0.06,0.42,0.6); noise(t,0.012,0.35,[["bandpass",3500,0.8]]); },
+    SD:t=>{ osc(t,"triangle",190,160,0.05,0.1,0.42); osc(t,"triangle",330,290,0.05,0.07,0.22); noise(t,0.26,0.48,[["highpass",2400]]); },
+    H1:(t,l)=>{ noise(t,0.045,0.3*l,[["highpass",9000]]); return metal(t,0.04,0.08*l,9000); },
+    H2:(t,l,dur)=>[noise(t,dur,0.2*l,[["highpass",8500]]),metal(t,dur,0.06*l,8500)],
+    P1:t=>{ osc(t,"triangle",500,0,0,0.025,0.4); osc(t,"triangle",1720,0,0,0.02,0.28); noise(t,0.02,0.28,[["bandpass",2500,1]]); },
+    P2:t=>{ osc(t,"sine",150,105,0.2,0.4,0.6); noise(t,0.05,0.07,[["lowpass",1200]]); }
+  },
+  "606":{
+    BD:t=>osc(t,"sine",180,58,0.035,0.2,1.0),
+    SD:t=>{ osc(t,"triangle",230,0,0,0.06,0.3); noise(t,0.12,0.45,[["bandpass",3200,0.7]]); },
+    H1:(t,l)=>noise(t,0.03,0.3*l,[["highpass",7000],["bandpass",9500,0.8]]),
+    H2:(t,l,dur)=>noise(t,dur*0.7,0.22*l,[["highpass",7000],["bandpass",9500,0.8]]),
+    P1:t=>osc(t,"sine",290,215,0.15,0.22,0.55),
+    P2:t=>osc(t,"sine",185,135,0.18,0.3,0.6)
+  }
+};
+function voice(lane,t,k,roll,lvl){
+  if((lane==="H1"||lane==="H2")&&openHat&&openHat.end>t){ // a new hat hit chokes the ringing open hat
+    for(const g of openHat.gs){ g.gain.cancelScheduledValues(t); g.gain.setTargetAtTime(0.0001,t,0.008); }
+    openHat=null;
+  }
+  if(lane==="H2"){ const dur=roll?0.07:0.45; openHat={gs:[].concat(VOICES[state.kit].H2(t,roll?0.75:1,dur)).filter(Boolean),end:t+dur}; return; }
+  VOICES[state.kit][lane](t,lvl??(k%4===0?1:(k%2===0?0.8:0.6)));
+}
+function barEvents(){
+  const N=curRes(), spb=60/state.bpm;
+  const list=[];
+  for(const L of LANES){ const ticks=laneTicks(L.key); for(let k=0;k<16;k++) if(pattern[L.key][k]&&!linearMuted(L.key,k)) list.push({t:ticks[k]/N*spb,lane:L.key,k}); }
+  for(const r of rollTicks()) list.push({t:r.t/N*spb,lane:"H2",k:r.k,roll:true});
+  for(const r of stutTicks()) list.push({t:r.t/N*spb,lane:"H1",k:r.k,lvl:r.lvl});
+  list.sort((a,b)=>a.t-b.t); return {list,dur:4*spb};
+}
+function schedule(){
+  for(;;){
+    if(evI>=cur.list.length){
+      const last=bars[bars.length-1], next=last.start+last.dur;
+      if(next>ctx.currentTime+0.12) break;
+      cur=barEvents(); evI=0; bars.push({start:next,dur:cur.dur}); if(bars.length>4) bars.shift(); continue;
+    }
+    const e=cur.list[evI], t=bars[bars.length-1].start+e.t;
+    if(t>ctx.currentTime+0.12) break;
+    if(!muted[e.lane]) voice(e.lane,t,e.k,e.roll,e.lvl); evI++;
+  }
+}
+function frame(){
+  const now=ctx.currentTime, b=[...bars].reverse().find(x=>x.start<=now);
+  if(b){ const x=BX(Math.min(1,(now-b.start)/b.dur)); bar.playhead.setAttribute("x1",x); bar.playhead.setAttribute("x2",x); }
+  raf=requestAnimationFrame(frame);
+}
+function setPlay(on){
+  const btn=document.getElementById("play");
+  if(on){
+    ensureAudio();
+    cur=barEvents(); evI=0; bars=[{start:ctx.currentTime+0.1,dur:cur.dur}];
+    timer=setInterval(schedule,20); schedule(); raf=requestAnimationFrame(frame);
+    bar.playhead.setAttribute("visibility","visible");
+  } else { clearInterval(timer); cancelAnimationFrame(raf); bar.playhead.setAttribute("visibility","hidden"); }
+  playing=on; btn.setAttribute("aria-pressed",String(on));
+  btn.querySelector("span").textContent=on?"Stop":"Play";
+  document.getElementById("playIcon").setAttribute("d",on?"M2 2h6v6H2z":"M2 1l7 4-7 4z");
+}
+document.getElementById("play").addEventListener("click",()=>setPlay(!playing));
+
+// ---------- Download tables: every mapped style (not the four factory Timings) as a zip ----------
+// tables.json and tables_96ppq.csv (step positions at 96 ticks per beat), stolperbeats_rows.txt (rows in the module's
+// own format: 16 step lengths + ticks per beat), MIDI grooves for Ableton, and a README. No firmware, no addresses.
+const GM={BD:36,SD:38,H1:42,H2:46,P1:39,P2:63};
+const TRACK_NAME={BD:"Kick",SD:"Snare",H1:"Hihat1",H2:"Hihat2",P1:"Perc1",P2:"Perc2"};
+function styleTables(only){
+  const keep={mod:state.mod,bpm:state.bpm,timing:state.timing,shuffle:state.shuffle};
+  state.mod=false; state.bpm=90; // VOODOO is set in ms, so its ticks are taken at 90 bpm
+  const out=[];
+  for(const t of TIMINGS.filter(x=>x.deluge&&(!only||x.key===only))){
+    state.timing=t.key;
+    const perTrack=!!(t.voice||t.split), levels=[];
+    for(let L=1;L<=6;L++){
+      state.shuffle=L;
+      const r=v=>+v.toFixed(3);
+      if(perTrack) levels.push({level:L,tracks:Object.fromEntries(LANES.map(l=>[TRACK_NAME[l.key],lanePositions(t.key,L,l.key).map(r)]))});
+      else levels.push({level:L,steps:positions(t.key,L).map(r)});
+    }
+    out.push({style:t.key,about:t.desc,main:!t.more,perTrack,levels,module:moduleRows(t.key)});
+  }
+  Object.assign(state,keep);
+  return out;
+}
+// Stolperbeats-format rows (level 0 straight, then 1-6) for the styles that fit as plain tables.
+function moduleRows(key){
+  let beats=null;
+  if(key==="HOPP"||key==="DEEP"||key==="FOLD") beats=MODULE[key].map(([N,b])=>[N,b]);
+  if(key==="CLSTR") beats=[1,2,3,4,5,6].map(L=>[4*DELUGE.CLSTR_N[L-1],clstrSlots(L).map(x=>x*4)]);
+  if(!beats) return null;
+  const row=(N,b)=>{ const lens=b.map((x,i)=>(i<3?b[i+1]:N)-x); return {ticksPerBeat:N,stepLengths:[...lens,...lens,...lens,...lens]}; };
+  return [row(16,[0,4,8,12]),...beats.map(([N,b])=>row(N,b))];
+}
+function tablesReadme(st){
+  const k=st.style, rows=!!st.module, files=[
+    ["README.txt","this file"],
+    [`${k}.json`,"step positions, 96 ticks per beat"],
+    [`${k}_96ppq.csv`,`the same, one row per level${st.perTrack?" and track":""}`],
+    ...(rows?[[`${k}_stolperbeats_rows.txt`,"the style in Stolperbeats' own row format"]]:[]),
+    ["midi/","one-bar groove clips for Ableton Live"]];
+  const w=Math.max(...files.map(f=>f[0].length))+3;
+  return [
+`${k}: ${st.about}`,
+"Stolperbeats visualiser, mapped timing table",
+"For Educational Purposes Only.",
+"",
+"",
+"WHAT'S IN THIS ZIP",
+"",
+...files.map(([n,d])=>"  "+n.padEnd(w)+d),
+"",
+"",
+"READING THE TABLES",
+"",
+"  - Levels 1 to 6 are listed. Level 0 is always straight 16ths.",
+"  - A bar has 16 steps (16th notes). Each number is the tick that step plays on.",
+"  - 96 ticks per beat, 384 per bar. A straight 16th lands every 24 ticks: 0, 24, 48, 72 ...",
+...(st.perTrack?["  - This style moves tracks separately, so each track (Kick, Snare, Hihat1, Hihat2, Perc1, Perc2)","    has its own row."]:[]),
+...(k==="VOODOO"?["  - VOODOO's drag is set in ms. These ticks are worked out at 90 bpm."]:[]),
+"",
+"",
+"MIDI GROOVES IN ABLETON LIVE",
+"",
+"  1. Drag a clip from midi/ onto a MIDI track.",
+"  2. Right-click the clip and choose Extract Groove(s).",
+"  3. Apply the groove from the Groove Pool to your own clips.",
+"",
+"  The clips are one bar at 90 bpm, 960 ticks per beat.",
+...(st.perTrack?["  This style has one clip per track, so give each drum track its own groove.",
+                 "  Notes: Kick 36, Snare 38, Hihat1 42, Hihat2 46, Perc1 39, Perc2 63."]
+               :["  Each clip is a closed hat (note 42) on every 16th."]),
+...(rows?["","","STOLPERBEATS-FORMAT ROWS","",
+"  One row per level: the ticks per beat, then 16 step lengths (one bar of 16ths).",
+"  Each step plays at the running total of the lengths before it.",
+"  Level 0 is straight. Every grid is 16 to 36 ticks per beat, like the module's own."]:[]),
+...(k==="DRNK"?["","","  DRNK is Trip's patterns, so there are no separate Stolperbeats rows: on the module it is Trip."]:[]),
+"",
+"",
+"PLEASE NOTE",
+"",
+"  - Unofficial and independent. Not affiliated with, endorsed by or supported by",
+"    Making Sound Machines or Synthstrom Audible.",
+"  - Stolperbeats and its firmware belong to Making Sound Machines.",
+"  - No firmware is included, only this style's timing table.",
+""].join("\n");
+}
+// --- tiny writers: Standard MIDI File (format 0) and a stored (uncompressed) zip ---
+function midiFile(ticks96,note,name){
+  const vlq=n=>{ const b=[n&0x7f]; while((n>>=7)>0) b.unshift((n&0x7f)|0x80); return b; };
+  const t=ticks96.map(x=>Math.round(x*10)), ev=[];
+  t.forEach((x,i)=>{ const next=i<15?t[i+1]:3840, off=x+Math.max(1,Math.min(120,next-x-1)); ev.push([x,1,[0x99,note,100]],[off,0,[0x89,note,0]]); });
+  ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const nm=[...new TextEncoder().encode(name)];
+  let trk=[0,0xff,0x03,...vlq(nm.length),...nm, 0,0xff,0x51,3,0x0a,0x2c,0x2b, 0,0xff,0x58,4,4,2,24,8], now=0;
+  for(const [at,,bytes] of ev){ trk.push(...vlq(at-now),...bytes); now=at; }
+  trk.push(...vlq(Math.max(0,3840-now)),0xff,0x2f,0);
+  const u32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255];
+  return new Uint8Array([0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,0x03,0xc0, 0x4d,0x54,0x72,0x6b,...u32(trk.length),...trk]);
+}
+const CRC=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xedb88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+const crc32=b=>{ let c=0xffffffff; for(const x of b) c=CRC[(c^x)&255]^(c>>>8); return (c^0xffffffff)>>>0; };
+function zip(files){ // files: [[name, Uint8Array|string]]
+  const enc=new TextEncoder(), parts=[], central=[]; let offset=0;
+  const le=(n,w)=>Array.from({length:w},(_,i)=>(n>>>(8*i))&255);
+  for(const [name,data] of files){
+    const d=typeof data==="string"?enc.encode(data):data, nm=enc.encode(name), crc=crc32(d);
+    const head=[...le(0x04034b50,4),20,0,0,0,0,0,0,0,0x21,0,...le(crc,4),...le(d.length,4),...le(d.length,4),...le(nm.length,2),0,0];
+    parts.push(new Uint8Array(head),nm,d);
+    central.push(new Uint8Array([...le(0x02014b50,4),20,0,20,0,0,0,0,0,0,0,0x21,0,...le(crc,4),...le(d.length,4),...le(d.length,4),...le(nm.length,2),0,0,0,0,0,0,0,0,0,0,0,0,...le(offset,4)]),nm);
+    offset+=head.length+nm.length+d.length;
+  }
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const end=new Uint8Array([...le(0x06054b50,4),0,0,0,0,...le(files.length,2),...le(files.length,2),...le(cdSize,4),...le(offset,4),0,0]);
+  return new Blob([...parts,...central,end],{type:"application/zip"});
+}
+function buildTablesZip(key){
+  const st=styleTables(key)[0], k=st.style, files=[["README.txt",tablesReadme(st)]];
+  files.push([`${k}.json`,JSON.stringify({style:k,about:st.about,note:"For Educational Purposes Only. Unofficial; no firmware included.",ticksPerBeat:96,ticksPerBar:384,perTrack:st.perTrack,levels:st.levels,...(st.module?{stolperbeatsRows:st.module}:{})},null,1)]);
+  const csv=["level,track,"+ALL.map(i=>"step"+(i+1)).join(",")];
+  for(const L of st.levels){
+    if(st.perTrack) for(const [tr,v] of Object.entries(L.tracks)) csv.push([L.level,tr,...v].join(","));
+    else csv.push([L.level,"all",...L.steps].join(","));
+  }
+  files.push([`${k}_96ppq.csv`,csv.join("\n")+"\n"]);
+  if(st.module){
+    let rows=`${k}: ${st.about}\nStolperbeats-format rows. For Educational Purposes Only.\n\nlevel  ticks/beat  step lengths (one bar of 16ths)\n`;
+    st.module.forEach((r,L)=>rows+=`${String(L).padEnd(7)}${String(r.ticksPerBeat).padEnd(12)}${r.stepLengths.join(" ")}\n`);
+    files.push([`${k}_stolperbeats_rows.txt`,rows]);
+  }
+  for(const L of st.levels){
+    if(st.perTrack) for(const l of LANES){ const tr=TRACK_NAME[l.key]; files.push([`midi/${k}_L${L.level}_${tr}.mid`,midiFile(L.tracks[tr],GM[l.key],`${k} L${L.level} ${tr}`)]); }
+    else files.push([`midi/${k}_L${L.level}.mid`,midiFile(L.steps,42,`${k} L${L.level}`)]);
+  }
+  return {blob:zip(files),count:files.length};
+}
+document.getElementById("dlTables").addEventListener("click",()=>{
+  if(!isDeluge(state.timing)) return;
+  const {blob}=buildTablesZip(state.timing), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=`stolperbeats-${state.timing}-tables.zip`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
+
+drawKits(); drawFeels(); drawBeats(); update();
+</script>
+</body>
+</html>
