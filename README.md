@@ -21,6 +21,7 @@ Pick a Timing, turn the knob and press Play. Audio starts on your first click, b
 - **Hear straight**, to compare any setting with straight 16ths.
 - **808, 909 and 606 kits**, synthesised in the browser.
 - **A close-up** of half a bar (or the whole bar for bar-long styles), with the tick each step lands on and its offset in ms.
+- **A timing creator** (the CREATOR switch at the top) for making your own Timing tables by hand. See below.
 - **Mute buttons, tempo, light and dark mode**, and a layout that keeps the controls and the grid on one screen.
 
 ## Timings
@@ -41,12 +42,13 @@ Pick a Timing, turn the knob and press Play. Audio starts on your first click, b
 | DRNK | Trip's six shuffled rows, from the Deluge community firmware patch | It *is* Trip |
 | HOPP | MPC / Linn 16th swing in whole ticks (54.2% to 70.8%) | Table swap |
 | DEEP | Two-level swing: the 8ths swing, then the 16ths inside them | Table swap, tested on hardware |
-| CLSTR | DRNK inside out: the e, & and a cluster mid-beat, and levels 4 to 6 shift right to lean hard late | Table swap, exact on MODULE 36 (test build 165, not yet heard) |
+| SQEZ | Made in the creator: starts like CLSTR, then the & and a squeeze up against the next downbeat. Module rows only, no DELUGE 96 version | Table swap (test build 166) |
 
 ### Archive (press MORE)
 
 | Style | What it does |
 |---|---|
+| CLSTR | DRNK inside out: the e, & and a cluster mid-beat, and levels 4 to 6 shift right to lean hard late (table swap, test build 165) |
 | FOLD | The "e" and "a" of every beat fold in toward the "&" (table swap, tested on hardware in build 164) |
 | AFOLD | FOLD alternating: in on beats 1 and 3, out on 2 and 4 |
 | XFOLD | The original FOLD: hats fold in while Kick and Snare fold out (needs per-track firing) |
@@ -64,12 +66,12 @@ Every style runs 0 to 6 like the module's Shuffle, with 0 meaning straight 16ths
 
 ### Grid: MODULE 36 or DELUGE 96
 
-The green four have two versions, chosen with the Grid switch:
+DRNK, HOPP and DEEP have two versions, chosen with the Grid switch:
 
 - **MODULE 36 (default):** whole ticks at 16 to 36 ticks per beat, exactly how Stolperbeats would have to hold them. The Feels run on that grid too.
 - **DELUGE 96:** the Deluge's 96 ticks per beat.
 
-The two versions are within a few ms of each other (HOPP 4.6 ms, DEEP 8.2 ms at 90 bpm). DRNK on MODULE 36 is exactly Trip, and CLSTR is exact too (each slot is 4 ticks).
+The two versions are within a few ms of each other (HOPP 4.6 ms, DEEP 8.2 ms at 90 bpm). DRNK on MODULE 36 is exactly Trip. SQEZ only exists as module rows, so it always plays on its own grid.
 
 ## Feels
 
@@ -97,6 +99,23 @@ The button by the Timings saves the **currently selected style** as a zip:
 - one-bar MIDI groove clips for Ableton Live: right-click a clip and choose *Extract Groove(s)*
 
 It's disabled for the four factory Timings. No firmware, addresses or patching steps are included.
+
+## Creator
+
+The **VISUALISER | CREATOR** switch next to Dark turns the Timing row into a table maker. The grid, kits, beats, Feels and playback all stay the same.
+
+- **Start from** any Timing the module could hold as a table (Trip, Shake, Push, Clave, DRNK, HOPP, DEEP, CLSTR, FOLD, or one of your own), or from straight.
+- **Drag steps** 2 to 4 and 6 to 8 in the half-bar view while it plays. Steps 1 and 5 are pinned to the beat. Or click a step and use the arrow keys.
+- **The Shuffle slider picks the level.** Level 0 is always straight. A level you haven't touched yet starts as a copy of the one before, and **Copy previous level** re-copies it.
+- **Grid** sets the level's ticks per beat (16 to 36 in steps of 4). **Snap** moves by single ticks or by 4-tick slots (N/4 slots per beat, like Trip).
+- **Beats:** *Every beat* makes beat 2 copy beat 1 (like Shake, Push, DEEP and CLSTR). *Beat 1 ≠ 2* edits all 8 steps of the half bar (like Trip and Clave).
+- The table under the half bar shows all 7 rows exactly as the firmware holds them: ticks per beat and 16 step lengths.
+
+Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. The badge turns amber for things that are allowed but worth knowing: 1-tick steps (2 is the shortest tested on hardware), step 5 off the beat (factory Clave does this), and the Rolls buzz at level 3 on grids above 20.
+
+- **Save to visualiser** adds it under MORE, with a teal light. Saved Timings stay in this browser only.
+- **Export** downloads `NAME.timing.json`: the 7 rows in the same `stolperbeatsRows` format Download tables uses.
+- **Import** loads a `.timing.json`, or a style's JSON from Download tables, back into the creator.
 
 ## How accurate is it
 

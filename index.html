@@ -237,6 +237,34 @@ main{padding-top:14px}
 .beats{gap:5px}
 .bbtn{font-size:12px;padding:2px 9px}
 .mine{padding:6px 14px;font-size:13px}
+/* VISUALISER | CREATOR switch, and the timing creator, which takes the Timing row's place at the same size */
+.pagehead{grid-template-columns:1fr auto auto;grid-template-areas:"title mode theme" "lede lede lede"}
+.pagehead .modesw{grid-area:mode}
+.modesw button{font-size:11.5px;letter-spacing:.06em;padding:6px 12px}
+.modesw button[data-mode="1"][aria-pressed=true]{background:var(--mine);color:#06201e}
+:root{--mine:#2bb5ae} :root[data-theme="dark"]{--mine:#3fd0c9}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--mine:#3fd0c9}}
+#creatorrow{grid-area:timing;height:133px;display:flex;flex-direction:column;gap:6px;min-width:0}
+body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
+#creatorrow .ctl-label{display:flex;align-items:center;gap:6px;margin-bottom:0;color:var(--mine);font-weight:700}
+.cacts{margin-left:auto;display:flex;align-items:center;gap:6px}
+.cacts .dl{margin-left:0}
+.cname{width:70px;border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:6px;padding:1px 7px;font:600 12px/1.5 ui-monospace,"SF Mono",Menlo,monospace;letter-spacing:.1em;text-transform:uppercase}
+.cname:focus{outline:none;border-color:var(--mine)}
+.crow{display:flex;align-items:center;gap:8px;min-width:0;height:26px}
+.crow .seg button{font-size:11.5px;padding:3px 9px;letter-spacing:.03em;white-space:nowrap}
+.crow .dl,.cacts .dl{white-space:nowrap}
+.crow .seg button[aria-pressed=true]{background:var(--mine);color:#06201e}
+.csel{background:var(--chip);color:var(--text);border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12px;padding:2px 4px;height:24px}
+.cbadge{margin-left:auto;font-size:11px;font-weight:700;letter-spacing:.05em;border:1px solid var(--ok);color:var(--ok);border-radius:999px;padding:1px 9px;white-space:nowrap}
+.cbadge.warn{border-color:var(--warn);color:var(--warn)}
+#cMsg{margin-top:auto}
+#cMsg.flash{color:var(--mine)} #cMsg.bad{color:var(--late)}
+#beat.editing{touch-action:none;user-select:none;-webkit-user-select:none}
+#beat:focus-visible{outline:2px solid var(--mine);outline-offset:2px;border-radius:6px}
+#tbl tr.cur td{background:color-mix(in srgb,var(--mine) 12%,transparent)}
+#tbl td.lens{letter-spacing:.02em}
+@media (max-width:760px){ #creatorrow{height:auto} .crow{flex-wrap:wrap;height:auto} .pagehead{grid-template-areas:"title title theme" "mode mode mode" "lede lede lede"} }
 @media (max-width:900px){
   .timings{grid-template-columns:1fr}
   .feels{grid-template-columns:repeat(4,1fr)}
@@ -252,6 +280,7 @@ main{padding-top:14px}
   <header class="pagehead">
     <h1>Stolperbeats visualiser</h1>
     <p class="lede">This is a visualiser and emulator of the MSM Stolperbeats module. I made this to help my eyes understand what my ears were hearing, and also to experiment with hypothetical "alt timings" that may be able to be added to the firmware at some stage. I built this for educational purposes only.</p>
+    <div class="seg modesw" id="modeSw" role="group" aria-label="Page mode"><button data-mode="0" aria-pressed="true">VISUALISER</button><button data-mode="1" aria-pressed="false" title="Make your own Timing table">CREATOR</button></div>
     <button class="theme" id="theme" aria-label="Switch to light mode">
       <span id="themeLabel">Dark</span>
       <span class="track" aria-hidden="true"><span class="knobdot"></span></span>
@@ -263,6 +292,29 @@ main{padding-top:14px}
       <div class="ctl-label">Timing<span class="bypass" aria-hidden="true">· STRAIGHT</span><button class="dl" id="dlTables">Download tables</button></div>
       <div class="timings" id="timing" role="group" aria-label="Timing"></div>
       <p class="row-desc" id="timingDesc"></p>
+    </div>
+    <div class="tilerow" id="creatorrow" role="group" aria-label="Timing creator">
+      <div class="ctl-label">Timing creator
+        <span class="cacts">
+          <input id="cName" class="cname" maxlength="5" placeholder="NAME" aria-label="Name, up to 5 letters or numbers" spellcheck="false" autocomplete="off">
+          <button class="dl" id="cSave">Save to visualiser</button>
+          <button class="dl" id="cDelete" hidden>Delete</button>
+          <button class="dl" id="cExport" title="Download the 7 rows as a .timing.json file">Export</button>
+          <button class="dl" id="cImport" title="Load a .timing.json, or a style's JSON from Download tables">Import</button>
+          <input type="file" id="cFile" accept=".json,application/json" hidden>
+        </span>
+      </div>
+      <div class="crow">
+        <span class="reslabel">Start from</span><select class="csel" id="cFrom" aria-label="Start from"></select>
+        <span class="reslabel">Beats</span><div class="seg" id="cLink" role="group" aria-label="Beats"><button data-v="1" title="Beat 2 copies beat 1, like Shake, Push, DEEP and CLSTR">Every beat</button><button data-v="0" title="Beat 1 and beat 2 differ, like Trip and Clave">Beat 1 ≠ 2</button></div>
+        <span class="reslabel">Snap</span><div class="seg" id="cSnap" role="group" aria-label="Snap"><button data-v="1" title="Snap to single ticks">Tick</button><button data-v="4" title="Snap to slots of 4 ticks: N/4 slots per beat, like Trip">Slot</button></div>
+      </div>
+      <div class="crow">
+        <span class="reslabel">Grid</span><div class="seg" id="cGrid" role="group" aria-label="Ticks per beat for this level"></div>
+        <button class="dl" id="cCopy" title="Make this level a copy of the one before">Copy previous level</button>
+        <span class="cbadge" id="cBadge"></span>
+      </div>
+      <p class="row-desc" id="cMsg"></p>
     </div>
     <div class="knob" id="knob">
       <div class="ctl-label"><span id="knobName">Shuffle</span> <span id="shufv" class="mono" style="color:var(--text)">0</span><span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
@@ -332,11 +384,12 @@ main{padding-top:14px}
       <p>Pick a Timing, turn the Shuffle control, and watch each hit get pushed off the straight 16th grid, then hear it. Click or drag on the bar to write your own beat.</p>
       <p><b>Stolperbeats Timings.</b> Trip, Shake, Push and Clave, with all seven Shuffle settings, come from the step tables in firmware 163, and every hit is placed the same way the module places it.</p>
       <p><b>Feels.</b> Tight, Rolls, Flam and Slop come from the module. Lock (kick stays straight), Late (kick straight, snare a tick late) and Stut (trap-style hat ratchets where producers usually put them) are proposed additions.</p>
-      <p><b>Deluge styles.</b> DRNK (Trip's six shuffled rows) and HOPP (MPC-style 16th swing) are groove tables written for the Synthstrom Deluge community firmware, shown at its 96 ticks per beat. DEEP (8ths and 16ths swinging at once) and CLSTR (DRNK inside out: the "e", "&" and "a" cluster mid-beat instead of leaving a gap, and lean further late as the level rises) are proposed. Every style runs 0 to 6.</p>
+      <p><b>Deluge styles.</b> DRNK (Trip's six shuffled rows) and HOPP (MPC-style 16th swing) are groove tables written for the Synthstrom Deluge community firmware, shown at its 96 ticks per beat. DEEP (8ths and 16ths swinging at once) is proposed. SQEZ, the fourth green tile, was made in the creator below: it starts like CLSTR, then squeezes the "&" and "a" up against the next downbeat. It only exists as module rows, so it has no DELUGE 96 version. Every style runs 0 to 6.</p>
       <p><b>Grid.</b> MODULE 36, the default, rebuilds the green styles in whole ticks at 16 to 36 ticks per beat, the way Stolperbeats would have to hold them, with the Feels running on that grid. DELUGE 96 shows them at the Deluge's 96 ticks per beat.</p>
-      <p><b>MORE.</b> The archive, all proposed: FOLD (the "e" and "a" of every beat fold in toward the "&"), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
+      <p><b>MORE.</b> The archive, all proposed: CLSTR (DRNK inside out: the "e", "&" and "a" cluster mid-beat instead of leaving a gap, and lean further late as the level rises), FOLD (the "e" and "a" of every beat fold in toward the "&"), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
       <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
+      <p><b>Creator.</b> The CREATOR switch at the top swaps the Timing row for a table maker, with the same grid, kits, Feels and playback. Start from a Timing or from straight, then drag the steps in the half-bar view while it plays. The Shuffle slider picks the level you're editing, and a level you haven't touched yet starts as a copy of the one before. Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. So it can go straight into a test build. Save adds it under MORE, Export saves its 7 rows as a file, and Import loads one back, including a style's JSON from Download tables. Saved Timings stay in this browser only, so export the ones you want to keep.</p>
       <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
     </div>
   </details>
@@ -387,7 +440,7 @@ main{padding-top:14px}
         <li>VOODOO follows D'Angelo's <i>Voodoo</i>: Questlove's groove drags behind the metronome and D'Angelo pushed the kick further off the beat, the claps aren't quantised with the snare, and Pino Palladino's bass drags behind drums that already drag (<a href="https://www.slate.com/articles/arts/music_box/2013/02/behind_the_scenes_with_questlove_and_d_angelo_on_voodoo.html" style="color:inherit">Slate</a>). Dilla, the Soulquarians' reference, set a different offset per MPC pad, with the snare about 30 ms after the kick (<a href="https://www.lrb.co.uk/the-paper/v44/n20/francis-gooding/basement-beats" style="color:inherit">LRB</a>). The values are our model, in ms so they hold at any tempo, and exaggerated past what's been described so the effect is obvious: Kick +35, Snare +50, clap (Perc 1) +70, Perc 2 +100 standing in for the bass, hats on the grid. No published measurement of <i>Voodoo</i> itself was found.</li>
         <li>FOLD uses one grid for every track and the same shape every beat: the "e" moves late and the "a" early, in toward the "&" (up to 14.4 ticks, about 100 ms at 90 bpm), passing the 8th-note triplets a little past level 3 and reaching the quintuplet slots at level 6. Downbeats and every "&" stay. Like the module's own rows it's a plain table, so it would need no code change on Stolperbeats. AFOLD, in the archive, alternates: beats 1 and 3 fold in, beats 2 and 4 fold out at half the amount (also a plain table: Trip already mixes early and late steps in one beat, and Clave already shapes beat 1 and beat 2 differently). XFOLD, in the archive, is the original per-track FOLD: hats and percs fold in while Kick and Snare fold out on the same beats. It's a read of Flume's records, not a measured study.</li>
         <li>LOTUS gives each track its own swing ratio on the off 16th of each 8th: Kick 50% (straight), Snare 66.7% (triplet 2:1), hats 75% (dotted 3:1), percs 80% (4:1, about 100 ms late at 90 bpm). It follows the "several grids in one beat" feel of Flying Lotus and the LA beat scene. SKEW takes the description of that scene as "several metronomes skewed in different directions": each track drifts on its own clock (by step 16 the hats are about 11 ticks early, the Snare 7.5 late, the percs 15 late, about 104 ms at 90 bpm) and every clock resyncs on the next downbeat.</li>
-        <li>MODULE 36 rebuilds the four green styles within Stolperbeats' limits: whole ticks, 16 to 36 ticks per beat, one ticks-per-beat value per level (the firmware's ticks-per-beat table has an entry for every row). Each level's grid is the closest fit among the module's own 16, 20, 24, 28, 32 and 36 ticks per beat; all are divisible by 4, so the Subdiv clock out, which pulses every 4 ticks, stays even. DRNK is exactly Trip. HOPP uses 36, 32, 24, 32, 36 and 28 ticks per beat (55.6, 56.3, 58.3, 62.5, 66.7 and 71.4%, the last being Linn's 71% step; within 4.6 ms of the 96-tick version at 90 bpm). DEEP uses 36, 24, 36, 36, 36 and 32 (within 8.2 ms). CLSTR uses 36, 20, 36, 32, 28 and 36, exactly: each slot is 4 ticks, and every step is at least 4 ticks. FOLD, now in the archive, still has module rows for Download tables: 36, 20, 28, 20, 16 and 20 (within 2.4 ms). Its levels 5 and 6 have 2-tick steps, one shorter than the shortest step in any factory row (3, in Clave); the code has no minimum and a one-tick Flam or Slop hold still lands before the next step, so it should be fine, but no factory table exercises it. The Rolls rate assumes a new style takes over one Timing's 7 rows, so it follows that group's slots in the row mask (every tick at levels 0 and 3).</li>
+        <li>MODULE 36 rebuilds DRNK, HOPP and DEEP within Stolperbeats' limits: whole ticks, 16 to 36 ticks per beat, one ticks-per-beat value per level (the firmware's ticks-per-beat table has an entry for every row). Each level's grid is the closest fit among the module's own 16, 20, 24, 28, 32 and 36 ticks per beat; all are divisible by 4, so the Subdiv clock out, which pulses every 4 ticks, stays even. DRNK is exactly Trip. HOPP uses 36, 32, 24, 32, 36 and 28 ticks per beat (55.6, 56.3, 58.3, 62.5, 66.7 and 71.4%, the last being Linn's 71% step; within 4.6 ms of the 96-tick version at 90 bpm). DEEP uses 36, 24, 36, 36, 36 and 32 (within 8.2 ms). SQEZ is module rows only, on 36, 20, 36, 32, 28 and 36; its levels 5 and 6 have 2-tick steps, like FOLD's. CLSTR, now in the archive, still has module rows for Download tables: 36, 20, 36, 32, 28 and 36, exactly, since each slot is 4 ticks. FOLD, also archived, still has module rows for Download tables: 36, 20, 28, 20, 16 and 20 (within 2.4 ms). Its levels 5 and 6 have 2-tick steps, one shorter than the shortest step in any factory row (3, in Clave); the code has no minimum and a one-tick Flam or Slop hold still lands before the next step, so it should be fine, but no factory table exercises it. The Rolls rate assumes a new style takes over one Timing's 7 rows, so it follows that group's slots in the row mask (every tick at levels 0 and 3).</li>
         <li>XFOLD (the per-track FOLD) on the module: traced in firmware 163, it would work with a firmware change, not a rewrite. The fire function already runs on every tick and every output has its own gate, MIDI and note-off state; only one shared "step reached" compare ties the tracks to one grid (<span class="mono">0x08010E7C</span>). Keeping that compare on a straight reference grid and adding a per-track check each tick (6 tracks × 8 steps against a small per-track table) would let tracks fire early or late on their own ticks: roughly 80 lines of C. Flam and Slop's hold can't be stretched to do it, as it only remembers the previous step for one tick. See NOTES.md.</li>
         <li>CLSTR is proposed too: DRNK inside out. Each beat is cut into n equal slots (9, 5, 9, 8, 7 and 9 for levels 1 to 6), and where DRNK leaves a gap in the middle, CLSTR clusters the "e", "&" and "a" and leans them late, more as the level rises: slots 4, 6, 8 of 9; 3, 4, 5 of 5; 5, 7, 8 of 9; then shifted right, 5, 6, 7 of 8; 5, 6, 7 of 7; and at level 6 the last three of 9 (7, 8, 9), jammed against the next downbeat. At 90 bpm the "e" runs from 56 ms late at level 1 to 278 ms at level 6. On the module it would sit on 36, 20, 36, 32, 28 and 36 ticks per beat, with every step at least 4 ticks, so it would be a plain table too.</li>
         <li>Every Deluge style here runs 0 to 6, like the module's Shuffle, with 0 meaning straight. HOPP is cut from the patch's 7 levels to 6 by dropping 60.4%. BALL, TOSS, SWAY, LIMP and DEEP keep their gentlest and strongest settings, spread over 6 levels.</li>
@@ -413,8 +466,10 @@ const TIMINGS=[
   {key:"DRNK", deluge:true, blurb:"Stolperbeats Trip, on the Deluge", desc:"Trip's tuplet slots on the Deluge. The downbeat never moves."},
   {key:"HOPP", deluge:true, blurb:"MPC / Linn 16th swing", desc:"MPC-style swing in whole ticks. Every second 16th lands late."},
   {key:"DEEP", deluge:true, blurb:"two-level swing", desc:"8ths swing, then each 8th's two 16ths swing again inside it."},
-  {key:"CLSTR", deluge:true, blurb:"n-tuplet clusters, leaning late", desc:"DRNK inside out: the e, & and a cluster mid-beat, then lean late."},
+  // SQEZ: made in the timing creator (timings/SQEZ.timing.json), module rows only, so no DELUGE 96 version
+  {key:"SQEZ", mine:true, green:true, blurb:"made in the creator", desc:"Starts like CLSTR, then the & and a squeeze up against the next downbeat."},
   // The archive: hidden until MORE is pressed, then shown in this order
+  {key:"CLSTR", deluge:true, more:true, blurb:"n-tuplet clusters, leaning late", desc:"DRNK inside out: the e, & and a cluster mid-beat, then lean late."},
   {key:"FOLD", deluge:true, more:true, blurb:"every beat folds in toward the &", desc:"The e and a of every beat fold in toward the &. Downbeats stay."},
   {key:"AFOLD", deluge:true, more:true, blurb:"in on 1 and 3, out on 2 and 4", desc:"Beats 1 and 3 fold in toward the &, beats 2 and 4 fold out."},
   {key:"XFOLD", deluge:true, more:true, voice:true, blurb:"hats fold in, drums fold out", desc:"Hats and percs fold in toward the &, Kick and Snare fold out."},
@@ -486,6 +541,8 @@ const DELUGE={
   DRNK_CAPTION:["Last step is rushed","A gap in the middle","A wider gap in the middle","A fairly large gap in the middle","Rushed in beginning and end","Rushed in beginning and end"]
 };
 const isDeluge=t=>!!TIMINGS.find(x=>x.key===t).deluge;
+// Your own Timings from the creator (and the creator's draft): module rows only, always on their own grid.
+const isMine=t=>!!TIMINGS.find(x=>x.key===t)?.mine;
 // Feel order is the firmware's FEEL value 0-3. Colours from the manual: orange, red, yellow, white.
 const FEELS=[
   {key:"Tight",lamp:"#f39237",desc:"All six tracks shuffle together. No extra timing on top."},
@@ -547,22 +604,25 @@ function loadBeat(i){
   pattern={}; for(const L of LANES) pattern[L.key]=toArr(BEATS[i][L.key]);
 }
 loadBeat(0);
-const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:true}; // the green styles start on MODULE 36
+const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:true,creator:false}; // the green styles start on MODULE 36
+let cSel=null; // the creator's selected step (0-7) in the half-bar view
 // MODULE 36: the four green styles rebuilt as Stolperbeats would hold them: whole ticks, 16 to 36 ticks per beat, with
 // its own ticks-per-beat value per level (the firmware keeps one per row). Grids are limited to the module's own
 // 16, 20, 24, 28, 32 and 36 so the Subdiv clock out (a pulse every 4 ticks) stays even. Each level is [N, the tick of each of the
 // 4 steps in a beat]. Found by searching N = 16..36 for the closest fit
 // (see Sources). DRNK needs no table: it is Trip. CLSTR is exact: its n slots are 4 ticks each, so N = 4n.
-// FOLD is archived but keeps its module rows for Download tables (it ran on hardware in test build 164).
-const GREEN=["DRNK","HOPP","DEEP","CLSTR"];
+// CLSTR and FOLD are archived but keep their module rows for Download tables (they ran in test builds 165 and 164).
+// SQEZ is module-only (made in the creator), so it's always on its own grid and isn't in GREEN.
+const GREEN=["DRNK","HOPP","DEEP"];
 const MODULE={
   HOPP:[[36,[0,10,18,28]],[32,[0,9,16,25]],[24,[0,7,12,19]],[32,[0,10,16,26]],[36,[0,12,18,30]],[28,[0,10,14,24]]],
   DEEP:[[36,[0,10,19,28]],[24,[0,7,13,19]],[36,[0,11,21,29]],[36,[0,12,22,30]],[36,[0,13,23,31]],[32,[0,13,21,28]]],
   CLSTR:DELUGE.CLSTR_N.map((n,i)=>[4*n,DELUGE.CLSTR_SLOTS[i].map(x=>4*x)]),
-  FOLD:[[36,[0,10,18,26]],[20,[0,6,10,14]],[28,[0,9,14,19]],[20,[0,7,10,13]],[16,[0,6,8,10]],[20,[0,8,10,12]]]
+  FOLD:[[36,[0,10,18,26]],[20,[0,6,10,14]],[28,[0,9,14,19]],[20,[0,7,10,13]],[16,[0,6,8,10]],[20,[0,8,10,12]]],
+  SQEZ:[[36,[0,12,20,28]],[20,[0,8,12,16]],[36,[0,13,24,28]],[32,[0,18,21,28]],[28,[0,9,23,26]],[36,[0,21,31,34]]] // test build 166
 };
 // True when a green style is playing on MODULE 36 (only the selected style switches; hybrids keep their 96 grids).
-const modOn=t=>state.mod&&GREEN.includes(state.timing)&&GREEN.includes(t);
+const modOn=t=>isMine(t)||state.mod&&GREEN.includes(state.timing)&&GREEN.includes(t);
 const modN=(t,s)=>s===0?16:t==="DRNK"?DATA.N[s]:MODULE[t][s-1][0];
 // Linear: when several tracks hit on the same step, only the highest priority one in each chain plays.
 // The manual's two parallel chains, so a hat and a perc can still share a step.
@@ -586,10 +646,10 @@ const feelKey=()=>FEELS[state.feel].key;
 // Trip's clock (row L). The other Deluge styles and swing off use the straight clock, 16 ticks per beat (row 0).
 function feelClock(){
   const s=state.shuffle, t=state.timing;
-  if(!isDeluge(t)) return {N:DATA.N[s],row:s+7*TIMINGS.findIndex(x=>x.key===t)};
-  // MODULE 36: the Feels run on the level's own grid. Assuming a new style takes over one Timing's 7 rows, its Rolls
-  // follow that group's slot in the row mask: every tick at levels 0 and 3, every second tick otherwise.
+  // MODULE 36 and your own Timings: the Feels run on the level's own grid. Assuming a new style takes over one Timing's
+  // 7 rows, its Rolls follow that group's slot in the row mask: every tick at levels 0 and 3, every second tick otherwise.
   if(modOn(t)) return {N:modN(t,s),row:s};
+  if(!isDeluge(t)) return {N:DATA.N[s],row:s+7*TIMINGS.findIndex(x=>x.key===t)};
   const home=splitOf(t)?splitOf(t).rest:t; // hybrids run the Feels on the grid most tracks use
   return home==="DRNK"?{N:DATA.N[s],row:s}:{N:16,row:0};
 }
@@ -793,7 +853,7 @@ function drawSlots(){
   gSlots.innerHTML="";
   if(state.shuffle===0) return;
   // Trip lands on multiples of 4 ticks: N/4 slots per beat, N per bar. DRNK has N slots per beat: 4N per bar.
-  const n=state.timing==="Trip"?DATA.N[state.shuffle]:tupletOf(state.timing,state.shuffle)?4*tupletOf(state.timing,state.shuffle).n:state.timing==="TRIO"?6:0;
+  const n=state.timing==="Trip"?DATA.N[state.shuffle]:isMine(state.timing)?curRes():tupletOf(state.timing,state.shuffle)?4*tupletOf(state.timing,state.shuffle).n:state.timing==="TRIO"?6:0;
   for(let j=0;n&&j<=n;j++) el("line",{x1:BX(j/n),x2:BX(j/n),y1:56,y2:64,stroke:css("slot"),"stroke-width":1.5},gSlots);
 }
 function retarget(){
@@ -862,7 +922,7 @@ function drawHalf(){
     if(R.label){ const lt=el("text",{x:B1,y:y-H-4,"text-anchor":"end",fill:css("text"),"font-size":12,"font-weight":600},beat); lt.textContent=R.label; }
     // Deluge: 96 ticks per beat is too dense to draw one by one, so marks every 4 ticks, taller on the straight 16ths
     for(let t=0;t<=span;t+=dl?4:1){
-      const edge=t%N===0, major=dl?t%DELUGE.STEP===0:state.timing==="Trip"&&t%4===0, h=edge?H:major?(dl?10:14):(dl?4:6);
+      const edge=t%N===0, major=dl?t%DELUGE.STEP===0:(state.timing==="Trip"||isMine(state.timing))&&t%4===0, h=edge?H:major?(dl?10:14):(dl?4:6);
       el("line",{x1:BXh(t),x2:BXh(t),y1:y-h,y2:y+h,stroke:edge?css("beat"):major?css("slot"):css("grid"),"stroke-width":edge?1.6:1},beat);
     }
     if(state.timing==="PROG"){ const [a,b]=DELUGE.PROG_GROUPS; // where the 7 and 9 group steps land at level 6
@@ -879,6 +939,8 @@ function drawHalf(){
         el("line",{x1:BXh(st),x2:BXh(p),y1:y,y2:y,stroke:c,"stroke-width":3,"stroke-opacity":.5},beat);
       }
       el("circle",{cx:BXh(p),cy:y,r:11,fill:c},beat);
+      if(state.creator&&s&&k===cSel) el("circle",{cx:BXh(p),cy:y,r:16,fill:"none",stroke:css("mine"),"stroke-width":2,"stroke-dasharray":"3 3"},beat);
+      if(state.creator&&s&&k%4===0) el("circle",{cx:BXh(p),cy:y,r:15,fill:"none",stroke:css("muted"),"stroke-width":1.5},beat); // pinned steps
       const nm=el("text",{x:BXh(p),y:y+4,"text-anchor":"middle",fill:css("panel"),"font-size":11,"font-weight":700},beat); nm.textContent=k+1;
       const tl=el("text",{x:BXh(p),y:y+(multi?24:32)+(k%2?14:0),"text-anchor":"middle",fill:css("muted"),"font-size":11},beat); tl.textContent=fmtTick(p);
     }
@@ -887,8 +949,13 @@ function drawHalf(){
   if(!multi){ const nt=el("text",{x:BXh(N/2),y:22,"text-anchor":"middle",fill:css("muted"),"font-size":12},beat); nt.textContent=`${N} ticks per beat`; }
   document.getElementById("halfTitle").textContent=mod&&s?`Half a bar up close: ${state.timing} on the module's ${N}-tick beat`:whole&&isVoice(state.timing)?`The whole bar up close: ${state.timing}, track by track`:whole?`The whole bar up close: ${state.timing}'s ${{BALL:"one-bar drop",TOSS:"one-bar throw",SWAY:"one-bar wave",LIMP:"uneven beats",TRIO:"quarter-note triplet pull",PROG:"7+9 split"}[state.timing]}`:"Half a bar up close: "+(
     state.timing==="DRNK"?"DRNK's 1-beat window, twice over":state.timing==="DEEP"?"DEEP's 1-beat window, twice over":state.timing==="CLSTR"?"CLSTR's 1-beat window, twice over":state.timing==="FOLD"?"FOLD's 1-beat window, twice over":state.timing==="AFOLD"?"AFOLD breathes in on beat 1, out on beat 2":split?`${state.timing}'s two grids, one beat at a time`:isVoice(state.timing)?`${state.timing}, track by track`:state.timing==="HOPP"?"HOPP's 2-step pair, four times over":"the firmware's 8-step cycle");
+  if(isMine(state.timing)) document.getElementById("halfTitle").textContent=state.creator
+    ?(s?`Timing creator: level ${s} on a ${N}-tick beat`:"Timing creator: level 0 is always straight")
+    :`Half a bar up close: ${state.timing} on a ${N}-tick beat`;
+  beat.classList.toggle("editing",state.creator&&s>0);
   let note;
-  if(mod&&s){ // MODULE 36: how far the whole-tick version sits from the 96-tick one
+  if(isMine(state.timing)) note=mineNote(s,N);
+  else if(mod&&s){ // MODULE 36: how far the whole-tick version sits from the 96-tick one
     const was=state.mod; state.mod=false; const ref=LANES.map(L=>lanePositions(state.timing,s,L.key)); state.mod=was;
     const err=Math.max(...LANES.flatMap((L,i)=>lanePositions(state.timing,s,L.key).map((p,k)=>Math.abs(p/N-ref[i][k]/96)*60000/state.bpm)));
     note=`MODULE 36: each mark is one tick of a ${N}-tick beat, the grid the module would use for this level. Numbers under the dots are the tick each step plays on. `+
@@ -926,6 +993,7 @@ function drawHalf(){
       : "Each mark is one tick. Numbers under the dots are the tick each step fires on. ")+`Step lengths from the table: ${lens}.`+feelNote();
   }
   document.getElementById("beatnote").textContent=note;
+  if(state.creator){ document.getElementById("tbl").innerHTML=creatorTable(); return; }
   const spb=60000/state.bpm;
   const cols=rows.length>1?rows:[{label:whole?"Played tick":"Firmware tick",pos}], slim=rows.length>2; // 3+ rows: offsets only
   let h=`<tr><th>Step</th><th>Straight tick</th>${cols.map(R=>slim?`<th>${R.label}</th>`:`<th>${rows.length>1?R.label.replace(" · "," on "):R.label}</th><th>Offset at ${state.bpm} bpm</th>`).join("")}</tr>`;
@@ -951,6 +1019,11 @@ function feelNote(){
 }
 function describe(){
   const s=state.shuffle, N=curRes(), pos=positions(state.timing,s);
+  if(isMine(state.timing)){
+    if(s===0) return "Straight 16ths. Nothing moves.";
+    const one=pos.slice(4,8).every((p,i)=>p===N+pos[i]);
+    return `${N} ticks per beat (${N/4} slots of 4). Steps land on ticks ${pos.slice(0,one?4:8).join(", ")} of ${one?"every beat":"each half bar"}.`;
+  }
   if(isDeluge(state.timing)){
     if(s===0) return "Swing off. Straight 16ths, nothing moves.";
     if(modOn(state.timing)){ const N=curRes(), b=pos.slice(0,4), msA=t=>(Math.abs(t)/N*60000/state.bpm).toFixed(1)+" ms";
@@ -995,7 +1068,8 @@ function describe(){
 function readout(){
   const s=state.shuffle, N=curRes(), t=TIMINGS.find(x=>x.key===state.timing);
   const maxMs=Math.max(...LANES.flatMap(L=>lanePositions(state.timing,s,L.key).map((p,k)=>Math.abs(p-k*N/4)/N*60000/state.bpm)));
-  document.getElementById("roMode").innerHTML=`<b>${state.timing}</b> · ${t.deluge?"Swing ":"Shuffle "}${s}<br><span class="sub">${t.blurb}</span>`;
+  const name=state.timing==="DRAFT"?(draft.name||"UNTITLED"):state.timing;
+  document.getElementById("roMode").innerHTML=`<b>${name}</b> · ${state.creator?"Level ":t.deluge?"Swing ":"Shuffle "}${s}<br><span class="sub">${t.blurb}</span>`;
   document.getElementById("roDesc").textContent=describe();
   document.getElementById("roRes").innerHTML=`${N} ticks<br><span class="sub">per beat</span>`;
   document.getElementById("roMax").innerHTML=`${maxMs.toFixed(1)} ms<br><span class="sub">at ${state.bpm} bpm</span>`;
@@ -1005,12 +1079,13 @@ function update(){
   const dl=isDeluge(state.timing); // every Timing runs 0-6, like the module's Shuffle; 0 is straight
   shuffleIn.value=state.shuffle;
   shuffleIn.setAttribute("aria-label",dl?"Swing amount, 0 to 6":"Shuffle amount, 0 to 6");
-  document.getElementById("knobName").textContent=dl?"Swing":"Shuffle";
+  document.getElementById("knobName").textContent=state.creator?"Shuffle level":dl?"Swing":"Shuffle";
   document.getElementById("timingDesc").textContent=TIMINGS.find(t=>t.key===state.timing).desc;
   document.getElementById("shufv").textContent=state.shuffle;
   document.querySelectorAll("#detents span").forEach((d,i)=>d.classList.toggle("on",i===state.shuffle));
   document.querySelectorAll("#timing [data-timing]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.timing===state.timing)));
   drawArchive(); drawRes(); drawDl();
+  if(state.creator) drawCreator();
   drawFeels(); drawSlots(); retarget(); drawHalf(); readout();
 }
 
@@ -1024,9 +1099,9 @@ for(const [g,cap] of [["stolper","Stolperbeats"],["deluge","Deluge"]]){
 // The archived Deluge styles stay hidden until MORE is pressed, then join the row in order, with LESS at the end.
 for(const t of TIMINGS){
   const item=document.createElement("div"); item.className="feel-item"+(t.more?" archived":"");
-  item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false" title="${t.desc}"${t.deluge&&!t.more?' style="--lamp:#45c472"':""}>${t.key.toUpperCase()}</button>`; // the four main Deluge styles glow green
+  item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false" title="${t.desc}"${(t.deluge||t.green)&&!t.more?' style="--lamp:#45c472"':""}>${t.key.toUpperCase()}</button>`; // the four main Deluge styles glow green
   item.querySelector("button").addEventListener("click",()=>{ state.timing=t.key; update(); });
-  tGroups[t.deluge?"deluge":"stolper"].querySelector(".tbtns").appendChild(item);
+  tGroups[t.deluge||t.green?"deluge":"stolper"].querySelector(".tbtns").appendChild(item);
 }
 const moreItem=document.createElement("div"); moreItem.className="feel-item";
 moreItem.innerHTML=`<button class="lampbtn morebtn" aria-expanded="false" aria-pressed="false">MORE<span class="caret" aria-hidden="true">▾</span></button>`;
@@ -1040,13 +1115,14 @@ document.querySelectorAll("#resSeg button").forEach(b=>b.addEventListener("click
 function drawRes(){
   const green=GREEN.includes(state.timing), row=document.querySelector(".resrow");
   row.classList.toggle("off",!green);
-  document.querySelectorAll("#resSeg button").forEach(b=>{ b.setAttribute("aria-pressed",String((b.dataset.mod==="1")===state.mod)); b.disabled=!green; });
-  document.getElementById("resNote").textContent=!green?"Green styles only":state.mod?`${curRes()} ticks per beat`:"";
+  const own=isMine(state.timing); // module-only Timings always play on their own grid
+  document.querySelectorAll("#resSeg button").forEach(b=>{ b.setAttribute("aria-pressed",String((b.dataset.mod==="1")===(own||state.mod))); b.disabled=!green; });
+  document.getElementById("resNote").textContent=isMine(state.timing)?(TIMINGS.find(x=>x.key===state.timing).green?"Module only":"Your own"):!green?"Green styles only":state.mod?`${curRes()} ticks per beat`:"";
 }
 // Download tables covers the selected style only, and not the four factory Timings.
 function drawDl(){
   const b=document.getElementById("dlTables"), ok=isDeluge(state.timing);
-  b.disabled=!ok; b.title=ok?`Download ${state.timing} as tables, Stolperbeats rows and MIDI grooves (zip)`:"The factory Timings aren't included";
+  b.disabled=!ok; b.title=ok?`Download ${state.timing} as tables, Stolperbeats rows and MIDI grooves (zip)`:isMine(state.timing)?"Module-only Timings export from the creator: pick it in Start from, then Export":"The factory Timings aren't included";
 }
 function drawArchive(){
   const t=TIMINGS.find(x=>x.key===state.timing), hidden=!!t.more&&!archiveOpen;
@@ -1364,6 +1440,276 @@ document.getElementById("dlTables").addEventListener("click",()=>{
   a.href=URL.createObjectURL(blob); a.download=`stolperbeats-${state.timing}-tables.zip`;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 });
+
+// ---------- timing creator: roll your own module table ----------
+// A Timing is 7 firmware rows: level 0 is straight (16 ticks per beat), and levels 1 to 6 each have their own grid N
+// (16 to 36 in steps of 4, so the Subdiv clock out stays even) and the tick each of the half bar's 8 steps fires on.
+// Always enforced, so any draft can go into a bin: whole ticks, step 1 on tick 0, every step at least 1 tick, and the
+// 8 lengths adding up to 2N. Step 5 sits on the beat (tick N) and is pinned there, unless the source put it elsewhere
+// (factory Clave does), in which case it stays where the source had it.
+const GRIDS=[16,20,24,28,32,36], MINE_STORE="stolperbeats-shuffle-map:mine", DRAFT_STORE="stolperbeats-shuffle-map:draft";
+const RESERVED=new Set(TIMINGS.map(t=>t.key.toUpperCase()).concat(["DRAFT","UNTITLED","STRAIGHT"]));
+TIMINGS.push({key:"DRAFT",mine:true,blurb:"being made in the creator",desc:"Your Timing in the creator."}); // no button
+const straightLevel=N=>({N,pos:[0,1,2,3,4,5,6,7].map(k=>k*N/4)});
+const copyLevel=L=>({N:L.N,pos:L.pos.slice()});
+const validLevel=L=>!!L&&GRIDS.includes(L.N)&&Array.isArray(L.pos)&&L.pos.length===8&&L.pos[0]===0&&
+  L.pos.every((p,k)=>Number.isInteger(p)&&(k===0||p>L.pos[k-1]))&&L.pos[7]<2*L.N;
+const isLinked=L=>L.pos[4]===L.N&&[1,2,3].every(i=>L.pos[4+i]===L.N+L.pos[i]);
+function linkLevel(L){ L.pos[4]=L.N; for(let i=1;i<4;i++) L.pos[4+i]=L.N+L.pos[i]; return L; }
+const cleanName=v=>String(v||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,5);
+const andList=a=>a.length<2?String(a[0]):a.slice(0,-1).join(", ")+" and "+a[a.length-1];
+const blankDraft=()=>({name:"",from:"",linked:true,snap:1,levels:Array(6).fill(null)});
+let draft=blankDraft(), prevTiming="Trip", savedHere=null, flashTimer=null;
+try{ const d=JSON.parse(localStorage.getItem(DRAFT_STORE));
+  if(d&&Array.isArray(d.levels)&&d.levels.length===6&&d.levels.every(L=>L===null||validLevel(L))) draft={...blankDraft(),...d,name:cleanName(d.name)}; }catch(e){}
+function saveDraft(){ try{ localStorage.setItem(DRAFT_STORE,JSON.stringify(draft)); }catch(e){} }
+
+// A level you haven't visited yet is a copy of the one before it; visiting it makes that copy its own.
+function resolved(L){ return L===0?straightLevel(16):draft.levels[L-1]||resolved(L-1); }
+function touch(L){ if(L>0&&!draft.levels[L-1]) draft.levels[L-1]=copyLevel(resolved(L-1)); }
+function syncDraft(){ MODULE.DRAFT=[1,2,3,4,5,6].map(L=>{ const v=resolved(L); return [v.N,v.pos]; }); }
+// The 7 rows exactly as the firmware holds them: 16 step lengths (the half bar twice) and the ticks per beat.
+function draftRows(){
+  return [straightLevel(16),...[1,2,3,4,5,6].map(resolved)].map(L=>{
+    const lens=L.pos.map((p,k)=>(k<7?L.pos[k+1]:2*L.N)-p);
+    return {ticksPerBeat:L.N,stepLengths:[...lens,...lens],pos:L.pos.slice()}; });
+}
+const rowOk=r=>GRIDS.includes(r.ticksPerBeat)&&r.stepLengths.every(x=>Number.isInteger(x)&&x>=1&&x<=255)&&
+  r.stepLengths.slice(0,8).reduce((a,b)=>a+b,0)===2*r.ticksPerBeat;
+function draftNotes(){
+  const rows=draftRows(), notes=[], lv=f=>rows.map((r,L)=>L&&f(r)?L:0).filter(Boolean);
+  const one=lv(r=>Math.min(...r.stepLengths)===1);
+  if(one.length) notes.push(`1-tick steps on level ${andList(one)} (2 is the shortest tested on hardware)`);
+  const off=lv(r=>r.pos[4]!==r.ticksPerBeat);
+  if(off.length) notes.push(`step 5 is off the beat on level ${andList(off)}, like factory Clave`);
+  if(rows[3].ticksPerBeat>20) notes.push(`Rolls buzz at level 3 (every tick of ${rows[3].ticksPerBeat})`);
+  return notes;
+}
+
+// Start from: any Timing the module could hold as a table, or your own.
+const mineKeys=()=>TIMINGS.filter(t=>t.mine&&!t.green&&t.key!=="DRAFT").map(t=>t.key);
+const loadable=()=>["Trip","Shake","Push","Clave","DRNK","HOPP","DEEP","SQEZ","CLSTR","FOLD",...mineKeys()];
+function levelsFrom(key){
+  const src=key==="DRNK"?"Trip":key; // DRNK is Trip
+  return [1,2,3,4,5,6].map(L=>{
+    if(DATA[src]&&!MODULE[src]){ const lens=DATA[src][L].slice(0,8), pos=[0]; for(let k=0;k<7;k++) pos.push(pos[k]+lens[k]); return {N:DATA.N[L],pos}; }
+    const [N,cyc]=MODULE[src][L-1]; return {N,pos:cyc.length===8?cyc.slice():cyc.concat(cyc.map(x=>x+N))};
+  });
+}
+function applyFrom(key){
+  const straight=key==="Straight";
+  draft.levels=straight?Array(6).fill(null):levelsFrom(key);
+  draft.linked=straight||draft.levels.every(isLinked); draft.from=key;
+  if(mineKeys().includes(key)) draft.name=key;
+  cSel=null; saveDraft();
+  flash(straight?"Starting straight. Each level starts as a copy of the one before.":`Loaded ${key}, all 6 levels. Drag steps to change it.`);
+}
+
+// Change a level's grid: steps keep their place in the beat, rounded to the new grid (and snap), still in order.
+function regrid(L,N2,q){
+  const f=N2/L.N, p=L.pos.map(x=>Math.round(x*f/q)*q), onBeat=L.pos[4]===L.N;
+  p[0]=0; if(onBeat) p[4]=N2;
+  for(let k=1;k<8;k++) if(!(onBeat&&k===4)) p[k]=Math.max(p[k],p[k-1]+1);
+  for(let k=7;k>0;k--) if(!(onBeat&&k===4)) p[k]=Math.min(p[k],(k<7?p[k+1]:2*N2)-1);
+  const out={N:N2,pos:p};
+  return validLevel(out)?out:straightLevel(N2);
+}
+// Move one step (0-based 1-3 or 5-7; 0 and 4 are pinned) to tick t, snapped, between its neighbours.
+function clampSnap(t,lo,hi,q){
+  let c=Math.round(t/q)*q; if(c<lo) c=Math.ceil(lo/q)*q; if(c>hi) c=Math.floor(hi/q)*q;
+  return c<lo||c>hi?Math.min(Math.max(Math.round(t),lo),hi):c;
+}
+function moveStep(k,t){
+  const L=draft.levels[state.shuffle-1], p=L.pos, N=L.N, q=draft.snap;
+  if(draft.linked){ const i=k%4; p[i]=clampSnap(t-(k>=4?N:0),p[i-1]+1,(i<3?p[i+1]:N)-1,q); linkLevel(L); }
+  else p[k]=clampSnap(t,p[k-1]+1,(k<7?p[k+1]:2*N)-1,q);
+}
+function refresh(){ syncDraft(); target=computeTargets(); shown=cloneT(target); drawBar(); drawSlots(); drawHalf(); readout(); drawCreator(); }
+
+// Dragging in the half-bar view
+const EDITABLE=[1,2,3,5,6,7];
+function beatPt(e){ const p=beat.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; return p.matrixTransform(beat.getScreenCTM().inverse()); }
+const halfX=(t,N)=>B0+(B1-B0)*t/(2*N), halfT=(x,N)=>(x-B0)/(B1-B0)*2*N;
+function stepAt(e){
+  if(!state.creator||!state.shuffle) return null;
+  const pt=beatPt(e), L=draft.levels[state.shuffle-1]; if(!L||Math.abs(pt.y-74)>36) return null;
+  let best=null, bd=22;
+  for(const k of EDITABLE){ const d=Math.abs(halfX(L.pos[k],L.N)-pt.x); if(d<bd){ bd=d; best=k; } }
+  return best;
+}
+let dragK=null;
+beat.addEventListener("pointerdown",e=>{
+  const k=stepAt(e); if(k===null) return;
+  e.preventDefault(); try{ beat.setPointerCapture(e.pointerId); }catch(err){}
+  dragK=k; cSel=k; beat.focus({preventScroll:true}); refresh();
+});
+beat.addEventListener("pointermove",e=>{
+  if(dragK===null){ beat.style.cursor=stepAt(e)!==null?"ew-resize":""; return; }
+  const L=draft.levels[state.shuffle-1], before=L.pos.join();
+  moveStep(dragK,halfT(beatPt(e).x,L.N)); if(L.pos.join()!==before) refresh();
+});
+const endDrag=()=>{ if(dragK===null) return; dragK=null; saveDraft(); };
+beat.addEventListener("pointerup",endDrag); beat.addEventListener("pointercancel",endDrag);
+beat.addEventListener("keydown",e=>{
+  if(!state.creator||!state.shuffle) return;
+  const L=draft.levels[state.shuffle-1];
+  if(e.key==="ArrowLeft"||e.key==="ArrowRight"){ e.preventDefault(); if(cSel===null) cSel=1;
+    moveStep(cSel,L.pos[cSel]+(e.key==="ArrowRight"?1:-1)*draft.snap); saveDraft(); refresh(); }
+  else if(e.key==="ArrowUp"||e.key==="ArrowDown"){ e.preventDefault();
+    const i=cSel===null?-1:EDITABLE.indexOf(cSel); cSel=EDITABLE[(i+(e.key==="ArrowDown"?1:EDITABLE.length-1+(i<0?1:0)))%EDITABLE.length]; refresh(); }
+});
+
+// Controls
+const cName=document.getElementById("cName"), cFrom=document.getElementById("cFrom"), cMsg=document.getElementById("cMsg"), cGrid=document.getElementById("cGrid");
+function flash(text,bad){
+  clearTimeout(flashTimer); cMsg.textContent=text; cMsg.className="row-desc "+(bad?"bad":"flash"); cMsg.dataset.flash="1";
+  flashTimer=setTimeout(()=>{ delete cMsg.dataset.flash; if(state.creator) drawCreator(); },4500);
+}
+function buildFrom(){
+  const groups=[["Start",["Straight"]],["Stolperbeats",["Trip","Shake","Push","Clave"]],["Green",["DRNK","HOPP","DEEP","SQEZ"]],["Archive",["CLSTR","FOLD"]],["Yours",mineKeys()]];
+  cFrom.innerHTML=`<option value="" disabled>Pick one</option>`+groups.filter(g=>g[1].length).map(([g,ks])=>`<optgroup label="${g}">${ks.map(k=>`<option value="${k}">${k==="Straight"?"Straight":k.toUpperCase()}</option>`).join("")}</optgroup>`).join("");
+  cFrom.value=draft.from||"";
+}
+cFrom.addEventListener("change",()=>{ applyFrom(cFrom.value); refresh(); });
+document.querySelectorAll("#cLink button").forEach(b=>b.addEventListener("click",()=>{
+  draft.linked=b.dataset.v==="1";
+  if(draft.linked){ let changed=0; draft.levels.forEach(L=>{ if(L&&!isLinked(L)){ linkLevel(L); changed++; } });
+    if(changed) flash(`Beat 2 now copies beat 1 on ${changed} level${changed>1?"s":""}.`); }
+  saveDraft(); refresh(); }));
+document.querySelectorAll("#cSnap button").forEach(b=>b.addEventListener("click",()=>{ draft.snap=+b.dataset.v; saveDraft(); drawCreator(); }));
+GRIDS.forEach(N=>{ const b=document.createElement("button"); b.textContent=N; b.dataset.n=N; b.title=`${N} ticks per beat: ${N/4} slots of 4 ticks`;
+  b.addEventListener("click",()=>{ const s=state.shuffle; if(!s) return; const L=draft.levels[s-1]; if(L.N===N) return;
+    const nl=regrid(L,N,draft.snap); draft.levels[s-1]=draft.linked?linkLevel(nl):nl; saveDraft(); refresh(); });
+  cGrid.appendChild(b); });
+document.getElementById("cCopy").addEventListener("click",()=>{ const s=state.shuffle; if(!s) return;
+  draft.levels[s-1]=copyLevel(resolved(s-1)); if(draft.linked&&!isLinked(draft.levels[s-1])) linkLevel(draft.levels[s-1]);
+  saveDraft(); flash(`Level ${s} is now a copy of level ${s-1}.`); refresh(); });
+cName.addEventListener("input",()=>{ const v=cleanName(cName.value); if(v!==cName.value) cName.value=v; draft.name=v; saveDraft(); readout(); drawCreator(); });
+
+// Saved Timings: kept in this browser, shown under MORE in the visualiser.
+function loadMine(){ try{ const a=JSON.parse(localStorage.getItem(MINE_STORE)); return Array.isArray(a)?a.filter(t=>t&&/^[A-Z0-9]{1,5}$/.test(t.key)&&!RESERVED.has(t.key)&&Array.isArray(t.levels)&&t.levels.length===6&&t.levels.every(validLevel)):[]; }catch(e){ return []; } }
+function storeMine(list){ try{ localStorage.setItem(MINE_STORE,JSON.stringify(list)); return true; }catch(e){ return false; } }
+function registerMine(t){
+  let info=TIMINGS.find(x=>x.key===t.key);
+  if(!info){ info={key:t.key,mine:true,more:true}; TIMINGS.push(info); }
+  info.blurb="your own, from the creator"; info.desc=`${t.key}: your own Timing, made in the creator. Module rows only.`;
+  MODULE[t.key]=t.levels.map(L=>[L.N,L.pos.slice()]);
+  if(!tGroups.deluge.querySelector(`[data-timing="${t.key}"]`)){
+    const item=document.createElement("div"); item.className="feel-item archived";
+    item.innerHTML=`<button class="lampbtn" data-timing="${t.key}" aria-pressed="false" title="Your own Timing, from the creator" style="--lamp:var(--mine)">${t.key}</button>`;
+    item.querySelector("button").addEventListener("click",()=>{ state.timing=t.key; update(); });
+    tGroups.deluge.querySelector(".tbtns").insertBefore(item,moreItem);
+  }
+}
+loadMine().forEach(registerMine);
+document.getElementById("cSave").addEventListener("click",()=>{
+  const nm=cleanName(cName.value);
+  if(!nm) return flash("Give it a name first: up to 5 letters or numbers.",true);
+  if(RESERVED.has(nm)) return flash(`${nm} is already a built-in name. Pick another.`,true);
+  if(!draftRows().every(rowOk)) return flash("Something in the table breaks the module's rules, so it wasn't saved.",true);
+  const t={key:nm,linked:draft.linked,levels:[1,2,3,4,5,6].map(L=>copyLevel(resolved(L)))};
+  const list=loadMine().filter(x=>x.key!==nm), existed=mineKeys().includes(nm); list.push(t);
+  const kept=storeMine(list);
+  registerMine(t); draft.name=nm; savedHere=nm; saveDraft(); buildFrom();
+  flash(kept?`${existed?"Updated":"Saved"} ${nm}. It's under MORE in the visualiser.`:`Added ${nm} to the visualiser for now, but this browser won't keep it. Export a copy.`,!kept); drawCreator();
+});
+document.getElementById("cDelete").addEventListener("click",()=>{
+  const nm=cleanName(cName.value); if(!mineKeys().includes(nm)) return;
+  if(!window.confirm(`Delete ${nm} from this browser? Your draft stays as it is.`)) return;
+  storeMine(loadMine().filter(x=>x.key!==nm));
+  TIMINGS.splice(TIMINGS.findIndex(x=>x.key===nm),1); delete MODULE[nm];
+  tGroups.deluge.querySelector(`[data-timing="${nm}"]`)?.parentElement.remove();
+  if(prevTiming===nm) prevTiming="Trip"; if(savedHere===nm) savedHere=null; if(draft.from===nm) draft.from="";
+  saveDraft(); buildFrom(); flash(`Deleted ${nm}.`); drawCreator();
+});
+// Export: the 7 rows as JSON, the same "stolperbeatsRows" shape as Download tables, so either can be imported.
+document.getElementById("cExport").addEventListener("click",()=>{
+  const nm=cleanName(cName.value)||"UNTITLED", rows=draftRows();
+  const json={style:nm,about:"Made in the Stolperbeats visualiser's timing creator.",note:"For Educational Purposes Only. Unofficial; no firmware included.",
+    linked:draft.linked,stolperbeatsRows:rows.map(r=>({ticksPerBeat:r.ticksPerBeat,stepLengths:r.stepLengths})),fireTicks:rows.map(r=>r.pos)};
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(json,null,1)],{type:"application/json"}));
+  a.download=`${nm}.timing.json`; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  flash(`Exported ${nm}.timing.json.`);
+});
+const cFile=document.getElementById("cFile");
+document.getElementById("cImport").addEventListener("click",()=>cFile.click());
+function importTiming(obj){
+  const rows=obj&&obj.stolperbeatsRows;
+  if(!Array.isArray(rows)||rows.length!==7) throw new Error("it needs 7 Stolperbeats rows (stolperbeatsRows)");
+  const levels=rows.slice(1).map((r,i)=>{
+    const N=r&&r.ticksPerBeat, l=r&&r.stepLengths;
+    if(!GRIDS.includes(N)) throw new Error(`level ${i+1} is on ${N} ticks per beat, and the module grids are 16 to 36 in steps of 4`);
+    if(!Array.isArray(l)||l.length<8||l.slice(0,8).some(x=>!Number.isInteger(x)||x<1)) throw new Error(`level ${i+1} has a step shorter than 1 tick`);
+    const sum=l.slice(0,8).reduce((a,b)=>a+b,0); if(sum!==2*N) throw new Error(`level ${i+1}'s 8 steps add up to ${sum}, not ${2*N}`);
+    const pos=[0]; for(let k=0;k<7;k++) pos.push(pos[k]+l[k]); return {N,pos};
+  });
+  draft={...blankDraft(),snap:draft.snap,name:cleanName(obj.style),linked:levels.every(isLinked),levels};
+  return draft.name||"it";
+}
+cFile.addEventListener("change",async()=>{
+  const f=cFile.files[0]; cFile.value=""; if(!f) return;
+  try{ const nm=importTiming(JSON.parse(await f.text())); saveDraft(); buildFrom(); if(!state.creator) setCreator(true); else refresh(); flash(`Imported ${nm}. Name it and Save to add it to the visualiser.`); }
+  catch(err){ flash(`Couldn't import ${f.name}: ${err.message||"it isn't a timing file"}.`,true); }
+});
+
+function drawCreator(){
+  const s=state.shuffle;
+  touch(s); syncDraft();
+  if(document.activeElement!==cName) cName.value=draft.name;
+  if(document.activeElement!==cFrom) cFrom.value=draft.from||"";
+  document.querySelectorAll("#cLink button").forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.v==="1")===draft.linked)));
+  document.querySelectorAll("#cSnap button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.v===draft.snap)));
+  const N=resolved(s).N;
+  cGrid.querySelectorAll("button").forEach(b=>{ b.setAttribute("aria-pressed",String(s>0&&+b.dataset.n===N)); b.disabled=!s; });
+  document.getElementById("cCopy").disabled=!s;
+  document.getElementById("cDelete").hidden=!mineKeys().includes(cleanName(cName.value));
+  document.getElementById("cSave").textContent=mineKeys().includes(cleanName(cName.value))?"Update in visualiser":"Save to visualiser";
+  const ok=draftRows().every(rowOk), notes=draftNotes(), badge=document.getElementById("cBadge");
+  badge.textContent=!ok?"BREAKS A RULE":notes.length?"MODULE READY · NOTES":"MODULE READY ✓";
+  badge.className="cbadge"+(ok&&!notes.length?"":" warn");
+  badge.title=ok?"Every row keeps to the module's rules: whole ticks, 16 to 36 ticks per beat, steps of at least 1 tick, 8 lengths adding up to 2N":"";
+  beat.setAttribute("tabindex",s?"0":"-1");
+  beat.setAttribute("aria-label",s?`Level ${s} of your Timing. Drag a step, or use the arrow keys.`:"Level 0, straight");
+  if(cMsg.dataset.flash) return;
+  cMsg.className="row-desc"+(notes.length?" warn":"");
+  cMsg.textContent=notes.length?`Notes: ${notes.join("; ")}.`
+    :s?"Drag steps 2 to 4 and 6 to 8 in the half-bar view below. Each new level starts as a copy of the one before."
+    :"Level 0 is straight on every Timing. Move the Shuffle slider to 1 to 6 to edit a level.";
+}
+function mineNote(s,N){
+  if(!s) return (state.creator?"Level 0 is straight 16ths on a 16-tick beat, on every Timing. Move the Shuffle slider to 1 to 6 to edit a level."
+    :"Straight 16ths on a 16-tick beat. Every step plays on its straight 16th.")+feelNote();
+  const p=MODULE[state.timing][s-1][1], lens=p.map((x,k)=>(k<7?p[k+1]:2*N)-x).join(", ");
+  return `Each mark is one tick of a ${N}-tick beat, and the taller marks are its ${N/4} slots of 4 ticks. Numbers under the dots are the tick each step fires on. Step lengths: ${lens}.`+
+    (state.creator?` Drag steps 2 to 4 and 6 to 8. Steps 1 and 5 (ringed) stay put. ${draft.linked?"Beat 2 follows beat 1.":"Beats 1 and 2 are edited separately."} Click a step, then use the arrow keys: left and right move it, up and down pick another.`:"")+feelNote();
+}
+function creatorTable(){
+  const rows=draftRows(), s=state.shuffle, m="style=\"color:var(--muted)\"";
+  let h=`<tr><th>Level</th><th>Ticks per beat</th><th>Steps fire on (half bar)</th><th>Firmware row: 16 step lengths</th><th></th></tr>`;
+  rows.forEach((r,L)=>{ const own=L===0||!!draft.levels[L-1];
+    let from=L-1; while(from>0&&!draft.levels[from-1]) from--;
+    h+=`<tr${L===s?' class="cur"':""}><td>${L}</td><td class="mono">${r.ticksPerBeat}</td><td class="mono">${r.pos.join(" ")}</td><td class="mono lens">${r.stepLengths.join(" ")}</td><td ${m}>${L===0?"straight, fixed":own?"":`copy of level ${from} until you visit it`}</td></tr>`; });
+  return h;
+}
+
+// VISUALISER | CREATOR
+const modeBtns=document.querySelectorAll("#modeSw button");
+function setCreator(on){
+  if(on===state.creator) return;
+  if(on){
+    prevTiming=state.timing; savedHere=null; state.creator=true; state.timing="DRAFT";
+    if(!draft.from&&draft.levels.every(L=>!L)) applyFrom(loadable().includes(prevTiming)?prevTiming:"Straight");
+    if(!state.shuffle) state.shuffle=1;
+  } else {
+    state.creator=false; cSel=null; dragK=null;
+    state.timing=savedHere&&TIMINGS.some(t=>t.key===savedHere)?savedHere:TIMINGS.some(t=>t.key===prevTiming)?prevTiming:"Trip";
+  }
+  document.body.classList.toggle("creating",on);
+  modeBtns.forEach(b=>b.setAttribute("aria-pressed",String((b.dataset.mode==="1")===on)));
+  update();
+}
+modeBtns.forEach(b=>b.addEventListener("click",()=>setCreator(b.dataset.mode==="1")));
+buildFrom(); syncDraft();
 
 drawKits(); drawFeels(); drawBeats(); update();
 </script>
