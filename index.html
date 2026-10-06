@@ -242,8 +242,16 @@ main{padding-top:14px}
 .pagehead .modesw{grid-area:mode}
 .modesw button{font-size:11.5px;letter-spacing:.06em;padding:6px 12px}
 .modesw button[data-mode="1"][aria-pressed=true]{background:var(--mine);color:#06201e}
-:root{--mine:#2bb5ae} :root[data-theme="dark"]{--mine:#3fd0c9}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--mine:#3fd0c9}}
+:root{--mine:#2bb5ae;--amber:#e09a1c} :root[data-theme="dark"]{--mine:#3fd0c9;--amber:#ffb627}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--mine:#3fd0c9;--amber:#ffb627}}
+/* the half-bar card glows amber in the visualiser and teal in the creator, where it's the editor */
+#halfCard{--hl:var(--amber);border:1.5px solid var(--hl);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--hl) 35%,transparent),0 0 16px 1px color-mix(in srgb,var(--hl) 38%,transparent),inset 0 0 12px color-mix(in srgb,var(--hl) 10%,transparent);
+  transition:border-color .4s ease,box-shadow .4s ease}
+body.creating #halfCard{--hl:var(--mine)}
+.halfhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.halfsub{font-size:13px;font-weight:600;color:var(--mine)}
+body:not(.creating) .halfsub{display:none}
 #creatorrow{grid-area:timing;height:133px;display:flex;flex-direction:column;gap:6px;min-width:0}
 body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
 #creatorrow .ctl-label{display:flex;align-items:center;gap:6px;margin-bottom:0;color:var(--mine);font-weight:700}
@@ -372,8 +380,8 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
     <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it.</p>
   </section>
 
-  <section class="card">
-    <h2 style="margin-bottom:10px" id="halfTitle">Half a bar up close: the firmware's 8-step cycle</h2>
+  <section class="card" id="halfCard">
+    <div class="halfhead"><h2 id="halfTitle">Half a bar up close: the firmware's 8-step cycle</h2><span class="halfsub">Use this section to shape the grid above: drag the steps and the bar follows.</span></div>
     <div class="scroll"><svg id="beat" viewBox="0 0 1000 150" role="img" aria-label="Half a bar divided into ticks with the eight step positions"></svg></div>
     <p class="hint" id="beatnote"></p>
     <table id="tbl"></table>
@@ -1715,7 +1723,7 @@ function drawCreator(){
 function mineNote(s,N){
   if(!s) return (state.creator?"Level 0 is straight 16ths on a 16-tick beat, on every Timing. Move the Shuffle slider to 1 to 6 to edit a level."
     :"Straight 16ths on a 16-tick beat. Every step plays on its straight 16th.")+feelNote();
-  const p=MODULE[state.timing][s-1][1], lens=p.map((x,k)=>(k<7?p[k+1]:2*N)-x).join(", ");
+  const c=MODULE[state.timing][s-1][1], p=c.length===8?c:c.concat(c.map(x=>x+N)), lens=p.map((x,k)=>(k<7?p[k+1]:2*N)-x).join(", ");
   return `Each mark is one tick of a ${N}-tick beat, and the taller marks are its ${N/4} slots of 4 ticks. Numbers under the dots are the tick each step fires on. Step lengths: ${lens}.`+
     (state.creator?` Drag steps 2 to 4 and 6 to 8. Steps 1 and 5 (ringed) stay put. ${draft.linked?"Beat 2 follows beat 1.":"Beats 1 and 2 are edited separately."} Click a step, then use the arrow keys: left and right move it, up and down pick another.`:"")+feelNote();
 }
