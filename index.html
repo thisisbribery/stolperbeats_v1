@@ -344,6 +344,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
   <section class="card">
     <div class="barhead"><h2>One bar</h2><span class="status" id="status"></span>
       <div class="barctl">
+        <button class="dl" id="dlMidi" title="Download this bar as a MIDI file: what plays, with the Timing, Shuffle, Feel, Rolls and Stut. Muted tracks and hits Linear silences are left out.">Download MIDI</button>
         <span class="kitlabel">Linear</span><div class="tiles" id="linear" role="group" aria-label="Linear"></div>
         <span class="kitlabel">Kit</span><div class="seg" id="kits" role="group" aria-label="Drum kit"></div>
       </div>
@@ -389,6 +390,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <p><b>MORE.</b> The archive, all proposed: CLSTR (DRNK inside out: the "e", "&" and "a" cluster mid-beat instead of leaving a gap, and lean further late as the level rises), FOLD (the "e" and "a" of every beat fold in toward the "&"), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
       <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
+      <p><b>Download MIDI.</b> The button above the grid saves the bar exactly as it plays: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's one bar of GM drums (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat.</p>
       <p><b>Creator.</b> The CREATOR switch at the top swaps the Timing row for a table maker, with the same grid, kits, Feels and playback. Start from a Timing or from straight, then drag the steps in the half-bar view while it plays. The Shuffle slider picks the level you're editing, and a level you haven't touched yet starts as a copy of the one before. Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. So it can go straight into a test build. Save adds it under MORE, Export saves its 7 rows as a file, and Import loads one back, including a style's JSON from Download tables. Saved Timings stay in this browser only, so export the ones you want to keep.</p>
       <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
     </div>
@@ -1304,6 +1306,40 @@ document.getElementById("play").addEventListener("click",()=>setPlay(!playing));
 // tables.json and tables_96ppq.csv (step positions at 96 ticks per beat), stolperbeats_rows.txt (rows in the module's
 // own format: 16 step lengths + ticks per beat), MIDI grooves for Ableton, and a README. No firmware, no addresses.
 const GM={BD:36,SD:38,H1:42,H2:46,P1:39,P2:63};
+
+// ---------- Download MIDI: the bar on the grid, exactly as it plays ----------
+// One bar of 4/4 at the current tempo, GM drums on channel 10, 960 ticks per quarter (hits round to the nearest 1/960
+// of a beat, under 0.4 ms at 90 bpm). Same events the player schedules: every hit at its played tick (Timing, Shuffle,
+// Feel, Hear straight), Rolls and Stut ratchets, accents as velocity. Muted tracks and Linear-silenced hits are left out.
+function gridMidi(){
+  const PPQ=960, BAR=4*PPQ, spb=60/state.bpm, u=[];
+  const ev=barEvents().list.filter(e=>!muted[e.lane]).map(e=>({
+    at:Math.min(BAR-1,Math.round(e.t/spb*PPQ)), note:GM[e.lane],
+    vel:Math.max(1,Math.min(127,Math.round(115*(e.roll?0.75:e.lvl??(e.k%4===0?1:e.k%2===0?0.8:0.6)))))}));
+  const msgs=[];
+  for(const e of ev){ // note length: up to a 32nd, ending before the same note plays again
+    const next=ev.filter(x=>x.note===e.note&&x.at>e.at).reduce((m,x)=>Math.min(m,x.at),BAR);
+    msgs.push([e.at,1,[0x99,e.note,e.vel]],[e.at+Math.max(1,Math.min(PPQ/8,next-e.at-1)),0,[0x89,e.note,0]]);
+  }
+  msgs.sort((a,b)=>a[0]-b[0]||a[1]-b[1]); // note-offs before note-ons on the same tick
+  const vlq=n=>{ const b=[n&0x7f]; while((n>>=7)>0) b.unshift((n&0x7f)|0x80); return b; };
+  const name=midiName(), nm=[...new TextEncoder().encode(name)], us=Math.round(60e6/state.bpm);
+  const trk=[0,0xff,0x03,...vlq(nm.length),...nm, 0,0xff,0x51,3,(us>>16)&255,(us>>8)&255,us&255, 0,0xff,0x58,4,4,2,24,8];
+  let now=0; for(const [at,,bytes] of msgs){ trk.push(...vlq(at-now),...bytes); now=at; }
+  trk.push(...vlq(Math.max(0,BAR-now)),0xff,0x2f,0);
+  const u32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255];
+  return {bytes:new Uint8Array([0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,(PPQ>>8)&255,PPQ&255, 0x4d,0x54,0x72,0x6b,...u32(trk.length),...trk]),name,hits:ev.length};
+}
+function midiName(){
+  const t=state.timing==="DRAFT"?(draft.name||"UNTITLED"):state.timing, beatName=beatIdx===CUSTOM?"your beat":BEATS[beatIdx].name;
+  return state.straight?`${beatName}, straight, ${state.bpm} bpm`:`${beatName}, ${t} ${state.shuffle}, ${FEELS[state.feel].key}${LINEARS[state.linear].chains?", Linear":""}, ${state.bpm} bpm`;
+}
+document.getElementById("dlMidi").addEventListener("click",()=>{
+  const {bytes,name}=gridMidi(), a=document.createElement("a");
+  a.href=URL.createObjectURL(new Blob([bytes],{type:"audio/midi"}));
+  a.download="stolperbeats-"+name.replace(/[^A-Za-z0-9 ]+/g," ").replace(/ +/g," ").trim().replace(/ /g,"-")+".mid";
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
 const TRACK_NAME={BD:"Kick",SD:"Snare",H1:"Hihat1",H2:"Hihat2",P1:"Perc1",P2:"Perc2"};
 function styleTables(only){
   const keep={mod:state.mod,bpm:state.bpm,timing:state.timing,shuffle:state.shuffle};

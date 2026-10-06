@@ -100,6 +100,10 @@ The button by the Timings saves the **currently selected style** as a zip:
 
 It's disabled for the four factory Timings. No firmware, addresses or patching steps are included.
 
+## Download MIDI
+
+The **Download MIDI** button above the grid saves the bar exactly as it plays: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's one bar of GM drums on channel 10 (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat, so hits are placed to within 1/960 of a beat. The file name says what it is, e.g. `stolperbeats-Boom-bap-SQEZ-5-Tight-90-bpm.mid`.
+
 ## Creator
 
 The **VISUALISER | CREATOR** switch next to Dark turns the Timing row into a table maker. The grid, kits, beats, Feels and playback all stay the same.
