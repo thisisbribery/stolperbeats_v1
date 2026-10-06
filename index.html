@@ -201,14 +201,18 @@ td.late{color:var(--late)} td.early{color:var(--early)}
   th{font-size:11px;letter-spacing:0}
 }
 /* compact layout: Timings, Feels, the Swing knob and the grid on one screen; fixed heights so the grid never moves */
-main{padding-top:20px}
-.pagehead{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:12px}
-.pagehead>div{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+main{padding-top:14px}
+.pagehead{display:grid;grid-template-columns:1fr auto;grid-template-areas:"title theme" "lede lede";align-items:center;gap:4px 16px;margin-bottom:10px}
+.pagehead h1{grid-area:title} .pagehead .theme{grid-area:theme} .pagehead .lede{grid-area:lede}
+
 .pagehead h1{font-size:24px;margin:0}
-.pagehead .lede{margin:0;font-size:14px}
+.pagehead .lede{margin:0;font-size:12.5px;line-height:1.45;max-width:none}
+.dl{margin-left:auto;border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:6px;padding:1px 9px;font:inherit;font-size:11px;letter-spacing:.04em;text-transform:none;cursor:pointer;line-height:1.5}
+.dl:hover:not(:disabled){border-color:var(--text)}
+.dl:disabled{opacity:.4;cursor:not-allowed}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .barhead h2{font-size:15px}
-.card{padding:14px 16px;margin-bottom:14px}
+.card{padding:14px 16px;margin-bottom:10px}
 .panel{grid-template-columns:1.45fr 1fr;gap:10px 24px}
 .ctl-label{margin-bottom:6px}
 .timings{grid-template-columns:4fr 5fr;gap:6px 12px}
@@ -223,15 +227,15 @@ main{padding-top:20px}
 .knob input{height:24px}
 .side{gap:8px}
 .readout{padding-top:10px;gap:14px}
-.barhead{flex-wrap:wrap;margin-bottom:8px;row-gap:6px}
+.barhead{flex-wrap:wrap;margin-bottom:4px;row-gap:6px}
 .barctl{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .barctl .kitlabel{font-size:12px;color:var(--muted);font-weight:600;margin-left:6px}
 .barctl .seg button{padding:4px 10px;font-size:13px}
 .barctl .tile{padding:4px 10px}
-.pickers{margin-bottom:8px;gap:10px;align-items:center}
+.pickers{margin-bottom:6px;gap:10px;align-items:center}
 .presets{padding:0;border:0}
 .beats{gap:5px}
-.bbtn{font-size:12px;padding:3px 9px}
+.bbtn{font-size:12px;padding:2px 9px}
 .mine{padding:6px 14px;font-size:13px}
 @media (max-width:900px){
   .timings{grid-template-columns:1fr}
@@ -246,10 +250,8 @@ main{padding-top:20px}
 <body>
 <main>
   <header class="pagehead">
-    <div>
-      <h1>Stolperbeats visualiser</h1>
-      <p class="lede">Pick a Timing, turn the knob, press Play. Unofficial, for education.</p>
-    </div>
+    <h1>Stolperbeats visualiser</h1>
+    <p class="lede">This is a visualiser and emulator of the MSM Stolperbeats module. I made this to help my eyes understand what my ears were hearing, and also to experiment with hypothetical "alt timings" that may be able to be added to the firmware at some stage. I built this for educational purposes only.</p>
     <button class="theme" id="theme" aria-label="Switch to light mode">
       <span id="themeLabel">Dark</span>
       <span class="track" aria-hidden="true"><span class="knobdot"></span></span>
@@ -258,7 +260,7 @@ main{padding-top:20px}
 
   <section class="card panel" aria-label="Controls">
     <div class="tilerow" id="timingrow">
-      <div class="ctl-label">Timing<span class="bypass" aria-hidden="true">· STRAIGHT</span></div>
+      <div class="ctl-label">Timing<span class="bypass" aria-hidden="true">· STRAIGHT</span><button class="dl" id="dlTables">Download tables</button></div>
       <div class="timings" id="timing" role="group" aria-label="Timing"></div>
       <p class="row-desc" id="timingDesc"></p>
     </div>
@@ -305,7 +307,7 @@ main{padding-top:20px}
         <button class="clear" id="clear">Clear your beat</button>
       </div>
     </div>
-    <div class="scroll"><svg id="bar" viewBox="0 0 1000 282" role="img" aria-label="One bar on six tracks. Click or drag to place hits."></svg></div>
+    <div class="scroll"><svg id="bar" viewBox="0 0 1000 272" role="img" aria-label="One bar on six tracks. Click or drag to place hits."></svg></div>
     <div class="legend">
       <span><i style="background:var(--on)"></i>on the grid</span>
       <span><i style="background:var(--late)"></i>pushed late</span>
@@ -331,9 +333,10 @@ main{padding-top:20px}
       <p><b>Stolperbeats Timings.</b> Trip, Shake, Push and Clave, with all seven Shuffle settings, come from the step tables in firmware 163, and every hit is placed the same way the module places it.</p>
       <p><b>Feels.</b> Tight, Rolls, Flam and Slop come from the module. Lock (kick stays straight), Late (kick straight, snare a tick late) and Stut (trap-style hat ratchets where producers usually put them) are proposed additions.</p>
       <p><b>Deluge styles.</b> DRNK (Trip's six shuffled rows) and HOPP (MPC-style 16th swing) are groove tables written for the Synthstrom Deluge community firmware, shown at its 96 ticks per beat. DEEP (8ths and 16ths swinging at once) and FOLD (the "e" and "a" of every beat fold in toward the "&") are proposed. Every style runs 0 to 6.</p>
-      <p><b>Grid.</b> DELUGE 96 shows the green styles at the Deluge's 96 ticks per beat. MODULE 36 rebuilds them in whole ticks at 16 to 36 ticks per beat, the way Stolperbeats would have to hold them, with the Feels running on that grid.</p>
-      <p><b>MORE.</b> The archive, all proposed: CLSTR (DRNK inside out: the same slot counts, with the "e", "&" and "a" clustered mid-beat instead of leaving a gap, leaning late when the count is odd), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
+      <p><b>Grid.</b> MODULE 36, the default, rebuilds the green styles in whole ticks at 16 to 36 ticks per beat, the way Stolperbeats would have to hold them, with the Feels running on that grid. DELUGE 96 shows them at the Deluge's 96 ticks per beat.</p>
+      <p><b>MORE.</b> The archive, all proposed: CLSTR (DRNK inside out: the "e", "&" and "a" cluster mid-beat instead of leaving a gap, and lean further late as the level rises), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
+      <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
       <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
     </div>
   </details>
@@ -359,10 +362,10 @@ main{padding-top:20px}
     <div>
       <h3 class="warn">≈ Matched, not traced in code</h3>
       <ul>
-        <li>Which table belongs to which button. The four tables sit in button order and match the manual's descriptions: Trip's tuplet shapes, Push making time for the downbeat, and Clave's 3:3:2 holding still.</li>
+        <li>Which table belongs to which button. The four tables sit in button order and match the manual's descriptions. Push and Clave are now confirmed on hardware: a private test build with DEEP and FOLD in the third and fourth tables played them from the PUSH and CLAVE buttons. Trip and Shake follow the same order.</li>
         <li>Feel colours come from the manual. The firmware only switches one of four LEDs per button.</li>
         <li>Trigger pulse length, and how the Feels appear on MIDI out, haven't been traced.</li>
-        <li>Nothing here has been measured on the hardware yet.</li>
+        <li>Only the DEEP and FOLD tables have been tried on a real module (by ear, in that test build). Nothing has been measured with instruments.</li>
         <li>The 808, 909 and 606 kits are synthesised approximations, not samples.</li>
         <li>Here Linear looks at the pattern, so a track muted with M still takes priority. The firmware's Linear reads the pattern arrays too, so this is likely the same on the module (not tested on hardware).</li>
         <li>Stut is a proposed Feel, not on the module. Its placement follows common trap production practice, not measured data: rolls at the end of the bar and just before snares, and triplet rolls on steps 7 and 15 in Metro Boomin and Southside style trap (<a href="https://emastered.com/blog/trap-drum-patterns" style="color:inherit">eMastered</a>); 32nd-triplet rolls at the end of a loop with a volume crescendo (<a href="https://ch41rm4n.com/2020/02/17/trap-hats-4-hi-hat-techniques-every-trap-producer-uses/" style="color:inherit">Ch41rm4n</a>); ×2 to ×8 subdivisions with a volume ramp (<a href="https://padwolf.app/learn/how-to-make-hi-hat-rolls/" style="color:inherit">Padwolf</a>). Boom bap rarely rolls its hats (<a href="https://blog.landr.com/trap-hats/" style="color:inherit">LANDR</a>). Here it fires every bar; real tracks often save rolls for every second or fourth bar.</li>
@@ -386,7 +389,7 @@ main{padding-top:20px}
         <li>LOTUS gives each track its own swing ratio on the off 16th of each 8th: Kick 50% (straight), Snare 66.7% (triplet 2:1), hats 75% (dotted 3:1), percs 80% (4:1, about 100 ms late at 90 bpm). It follows the "several grids in one beat" feel of Flying Lotus and the LA beat scene. SKEW takes the description of that scene as "several metronomes skewed in different directions": each track drifts on its own clock (by step 16 the hats are about 11 ticks early, the Snare 7.5 late, the percs 15 late, about 104 ms at 90 bpm) and every clock resyncs on the next downbeat.</li>
         <li>MODULE 36 rebuilds the four green styles within Stolperbeats' limits: whole ticks, 16 to 36 ticks per beat, one ticks-per-beat value per level (the firmware's ticks-per-beat table has an entry for every row). Each level's grid is the closest fit among the module's own 16, 20, 24, 28, 32 and 36 ticks per beat; all are divisible by 4, so the Subdiv clock out, which pulses every 4 ticks, stays even. DRNK is exactly Trip. HOPP uses 36, 32, 24, 32, 36 and 28 ticks per beat (55.6, 56.3, 58.3, 62.5, 66.7 and 71.4%, the last being Linn's 71% step; within 4.6 ms of the 96-tick version at 90 bpm). DEEP uses 36, 24, 36, 36, 36 and 32 (within 8.2 ms). FOLD uses 36, 20, 28, 20, 16 and 20 (within 2.4 ms). Its levels 5 and 6 have 2-tick steps, one shorter than the shortest step in any factory row (3, in Clave); the code has no minimum and a one-tick Flam or Slop hold still lands before the next step, so it should be fine, but no factory table exercises it. The Rolls rate assumes a new style takes over one Timing's 7 rows, so it follows that group's slots in the row mask (every tick at levels 0 and 3).</li>
         <li>XFOLD (the per-track FOLD) on the module: traced in firmware 163, it would work with a firmware change, not a rewrite. The fire function already runs on every tick and every output has its own gate, MIDI and note-off state; only one shared "step reached" compare ties the tracks to one grid (<span class="mono">0x08010E7C</span>). Keeping that compare on a straight reference grid and adding a per-track check each tick (6 tracks × 8 steps against a small per-track table) would let tracks fire early or late on their own ticks: roughly 80 lines of C. Flam and Slop's hold can't be stretched to do it, as it only remembers the previous step for one tick. See NOTES.md.</li>
-        <li>CLSTR is proposed too: DRNK inside out. It uses DRNK's slot counts (7, 9, 5, 6, 8 and 9 per beat), but where DRNK leaves a gap in the middle of the beat, CLSTR clusters the "e", "&" and "a" around it: slots 1, 4, 5, 6 of 7; 1, 4, 6, 8 of 9 (a looser cluster); 1, 3, 4, 5 of 5; 1, 3, 4, 5 of 6; 1, 4, 5, 6 of 8; and 1, 5, 6, 7 of 9 (tight). With an odd count there's no slot exactly halfway, so the cluster leans into the second half of the beat. On the module it would sit on the same grids as DRNK and Trip (28, 36, 20, 24, 32 and 36 ticks per beat), with every step at least 4 ticks, so it would be a plain table too.</li>
+        <li>CLSTR is proposed too: DRNK inside out. Each beat is cut into n equal slots (9, 5, 9, 8, 7 and 9 for levels 1 to 6), and where DRNK leaves a gap in the middle, CLSTR clusters the "e", "&" and "a" and leans them late, more as the level rises: slots 4, 6, 8 of 9; 3, 4, 5 of 5; 5, 7, 8 of 9; then shifted right, 5, 6, 7 of 8; 5, 6, 7 of 7; and at level 6 the last three of 9 (7, 8, 9), jammed against the next downbeat. At 90 bpm the "e" runs from 56 ms late at level 1 to 278 ms at level 6. On the module it would sit on 36, 20, 36, 32, 28 and 36 ticks per beat, with every step at least 4 ticks, so it would be a plain table too.</li>
         <li>Every Deluge style here runs 0 to 6, like the module's Shuffle, with 0 meaning straight. HOPP is cut from the patch's 7 levels to 6 by dropping 60.4%. BALL, TOSS, SWAY, LIMP and DEEP keep their gentlest and strongest settings, spread over 6 levels.</li>
         <li>Swing level 0 is off. Swing on the Deluge is a song-wide time warp, so all six tracks move together, and the Deluge has no Feels. The Feels here are a model of what they would do on these grids: DRNK level L runs them on Trip's Shuffle L clock (DRNK is Trip, so DRNK plus a Feel matches Trip plus that Feel), and the other Deluge styles and Swing OFF run them on Stolperbeats' straight clock of 16 ticks per beat.</li>
         <li>Lock is a proposed fifth Feel, not on the module or in the Deluge patch. The Kick stays on the straight 16ths while the other five tracks land where the Timing's table puts them, at every level. Downbeat kicks don't move under these Timings anyway, so Lock shows up on off-beat kicks.</li>
@@ -414,7 +417,7 @@ const TIMINGS=[
   // The archive: hidden until MORE is pressed, then shown in this order
   {key:"AFOLD", deluge:true, more:true, blurb:"in on 1 and 3, out on 2 and 4", desc:"Beats 1 and 3 fold in toward the &, beats 2 and 4 fold out."},
   {key:"XFOLD", deluge:true, more:true, voice:true, blurb:"hats fold in, drums fold out", desc:"Hats and percs fold in toward the &, Kick and Snare fold out."},
-  {key:"CLSTR", deluge:true, more:true, blurb:"DRNK's slots, clustered mid-beat", desc:"DRNK inside out: the e, & and a cluster mid-beat, leaning late."},
+  {key:"CLSTR", deluge:true, more:true, blurb:"n-tuplet clusters, leaning late", desc:"DRNK inside out: the e, & and a cluster mid-beat, then lean late."},
   {key:"TRIO", deluge:true, more:true, bar:true, blurb:"quarter-note triplet pull", desc:"Off-beats bend toward quarter-note triplets. Downbeats stay put."},
   {key:"PROG", deluge:true, more:true, bar:true, blurb:"7+9 odd grouping", desc:"Bar split 7+9: the first 7 steps stretch, the last 9 rush."},
   {key:"VOODOO", deluge:true, more:true, voice:true, blurb:"D'Angelo, per-track drag", desc:"Every track drags by its own amount, the clap and Perc 2 furthest."},
@@ -473,10 +476,13 @@ const DELUGE={
   // SKEW: each track runs on a slightly different clock and drifts until the bar line resyncs it (ticks by step 16).
   SKEW_END:{BD:0,SD:8,H1:-12,H2:-12,P1:16,P2:16},
   LIMP_R:[13,14,15,16,17,18].map(x=>x/12), // 1.08 to 1.5: 5:4 at level 3, 4:3 at 4, 3:2 at 6
-  // CLSTR (proposed): DRNK inside out. Same slot counts as DRNK (7, 9, 5, 6, 8, 9), but where DRNK leaves a gap
-  // in the middle of the beat, CLSTR clusters the "e", "&" and "a" around it. With an odd count there's no slot
-  // exactly halfway, so the cluster leans into the second half of the beat. Level 2 is loose, level 6 tight.
-  CLSTR_SLOTS:[[0,3,4,5],[0,3,5,7],[0,2,3,4],[0,2,3,4],[0,3,4,5],[0,4,5,6]],
+  // CLSTR (proposed): DRNK inside out. Each beat is cut into n equal slots and, where DRNK leaves a gap in the middle,
+  // CLSTR clusters the "e", "&" and "a" mid-beat. Levels 1-3 cluster around the middle (leaning late when n is odd);
+  // levels 4-6 are tight clusters shifted right, leaning late hard. The 9-slot cluster slides right from level 1
+  // to 3 to 6, where it's jammed against the next downbeat.
+  CLSTR_N:[9,5,9,8,7,9],
+  CLSTR_SLOTS:[[0,3,5,7],[0,2,3,4],[0,4,6,7],[0,4,5,6],[0,4,5,6],[0,6,7,8]],
+  CLSTR_SHIFTED:[false,false,false,true,true,true],
   DRNK_CAPTION:["Last step is rushed","A gap in the middle","A wider gap in the middle","A fairly large gap in the middle","Rushed in beginning and end","Rushed in beginning and end"]
 };
 const isDeluge=t=>!!TIMINGS.find(x=>x.key===t).deluge;
@@ -541,7 +547,7 @@ function loadBeat(i){
   pattern={}; for(const L of LANES) pattern[L.key]=toArr(BEATS[i][L.key]);
 }
 loadBeat(0);
-const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:false};
+const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:true}; // the green styles start on MODULE 36
 // MODULE 36: the four green styles rebuilt as Stolperbeats would hold them: whole ticks, 16 to 36 ticks per beat, with
 // its own ticks-per-beat value per level (the firmware keeps one per row). Grids are limited to the module's own
 // 16, 20, 24, 28, 32 and 36 so the Subdiv clock out (a pulse every 4 ticks) stays even. Each level is [N, the tick of each of the
@@ -597,7 +603,7 @@ function positions(timing,s){
   if(isDeluge(timing)){
     if(s===0) return ALL.map(k=>k*DELUGE.STEP);
     if(splitOf(timing)) return positions(splitOf(timing).rest,s); // the tracks outside the split; see lanePositions
-    if(timing==="CLSTR"){ const n=DELUGE.DRNK_N[s-1], sl=clstrSlots(s); return ALL.map(k=>Math.floor(k/4)*DELUGE.TPQ+sl[k%4]*DELUGE.TPQ/n); }
+    if(timing==="CLSTR"){ const n=DELUGE.CLSTR_N[s-1], sl=clstrSlots(s); return ALL.map(k=>Math.floor(k/4)*DELUGE.TPQ+sl[k%4]*DELUGE.TPQ/n); }
     if(timing==="DRNK"){ const n=DELUGE.DRNK_N[s-1], sl=DELUGE.DRNK_SLOTS[s-1]; return ALL.map(k=>Math.floor(k/4)*DELUGE.TPQ+sl[k%4]*DELUGE.TPQ/n); } // 1-beat window
     if(timing==="BALL"||timing==="TOSS"){ const g=ballGaps(s); if(timing==="TOSS") g.reverse(); let acc=0; return ALL.map(k=>{ const p=acc; acc+=g[k]; return p; }); } // 16-step window
     if(timing==="DEEP"){ const a=DELUGE.DEEP_8[s-1]/100, b=DELUGE.DEEP_16[s-1]/100, e=a*DELUGE.TPQ, beat=[0,b*e,e,e+b*(DELUGE.TPQ-e)];
@@ -644,10 +650,10 @@ const usesDRNK=t=>t==="DRNK"||!!splitOf(t);
 function ballGaps(s){ const r=DELUGE.BALL_R[s-1], g0=4*DELUGE.TPQ*(1-r)/(1-Math.pow(r,16)); return ALL.map(k=>g0*Math.pow(r,k)); }
 // LIMP's beat lengths in ticks: three short beats and a long fourth, R:1, filling the bar.
 function limpBeats(s){ const R=DELUGE.LIMP_R[s-1], short=4*DELUGE.TPQ/(3+R); return {R,short,long:R*short}; }
-// CLSTR's slots in a beat (out of DRNK's slot count for the level).
+// CLSTR's slots in a beat (out of CLSTR_N for the level).
 const clstrSlots=s=>DELUGE.CLSTR_SLOTS[s-1];
 // The n-tuplet grid a style plays on, for drawing its slots: DRNK (and the hybrids that use it) and CLSTR.
-const tupletOf=(t,s)=>!s?null:t==="CLSTR"?{n:DELUGE.DRNK_N[s-1],slots:clstrSlots(s)}:usesDRNK(t)?{n:DELUGE.DRNK_N[s-1],slots:DELUGE.DRNK_SLOTS[s-1]}:null;
+const tupletOf=(t,s)=>!s?null:t==="CLSTR"?{n:DELUGE.CLSTR_N[s-1],slots:clstrSlots(s)}:usesDRNK(t)?{n:DELUGE.DRNK_N[s-1],slots:DELUGE.DRNK_SLOTS[s-1]}:null;
 const fmtTick=p=>Number.isInteger(p)?String(p):String(+p.toFixed(2));
 const swingPct=e=>(e/(2*DELUGE.STEP)*100).toFixed(1);
 
@@ -658,7 +664,7 @@ const fmtMs=ms=>Math.abs(ms)<0.05?"0 ms":(ms>0?"+":"−")+Math.abs(ms).toFixed(1
 
 // ---------- bar view ----------
 const bar=document.getElementById("bar"), X0=122, X1=984, BX=f=>X0+(X1-X0)*f;
-const laneY={}, BOT=270; LANES.forEach((L,i)=>laneY[L.key]=86+i*34); // tight lanes so the whole grid fits on screen
+const laneY={}, BOT=260; LANES.forEach((L,i)=>laneY[L.key]=86+i*32); // tight lanes so the whole grid fits on screen
 const gSlots=el("g",{},bar), hits={};
 let hoverRing, gRoll;
 (function buildBar(){
@@ -896,7 +902,7 @@ function drawHalf(){
     else if(state.timing==="LIMP"){ const b=limpBeats(s); note+=`Beats 1 to 3 last ${fmtTick(b.short)} ticks each and beat 4 lasts ${fmtTick(b.long)} (${b.R.toFixed(2)}:1). Each beat's four 16ths split it evenly. At level 6 that's 2+2+2+3, the 9/8 aksak limp.`; }
     else if(state.timing==="VOODOO"){ const v=DELUGE.VOODOO_MS, f=s/6; note+=`Each row is a group of tracks that land together. The drag is set in ms, so it holds at any tempo: Kick ${+(v.BD*f).toFixed(1)} ms, Snare ${+(v.SD*f).toFixed(1)} ms, Perc 1 (the clap, not quite with the snare) ${+(v.P1*f).toFixed(1)} ms, and Perc 2 ${+(v.P2*f).toFixed(1)} ms, standing in for the bass that drags furthest. The hats are the straight reference.`; }
     else if(state.timing==="FOLD") note+=`One grid for every track, and every beat the same: the "e" ${fmtTick(14.4*s/6)} ticks late and the "a" ${fmtTick(14.4*s/6)} early, folding in toward the "&". They pass the 8th-note triplets a little past level 3 and reach the quintuplet slots at level 6. Downbeats and every "&" stay put.`;
-    else if(state.timing==="CLSTR"){ const n=tn, sl=clstrSlots(s); note+=`The tallest thin marks are DRNK's ${n} slots per beat, and hollow dots are the slots left empty. Where DRNK leaves a gap in the middle (steps on slots ${DELUGE.DRNK_SLOTS[s-1].map(x=>x+1).join(", ")}), CLSTR clusters the "e", "&" and "a" around it, on slots ${sl.slice(1).map(x=>x+1).join(", ")}. ${n%2?`With ${n} slots there's no slot exactly halfway, so the cluster leans into the second half of the beat.`:`With ${n} slots the "&" sits exactly halfway.`}`; }
+    else if(state.timing==="CLSTR"){ const n=tn, sl=clstrSlots(s), sh=DELUGE.CLSTR_SHIFTED[s-1]; note+=`The tallest thin marks are the ${n} slots each beat is cut into, and hollow dots are the slots left empty. Where DRNK leaves a gap in the middle, CLSTR clusters the "e", "&" and "a" on slots ${sl.slice(1).map(x=>x+1).join(", ")} of ${n}. `+(sh?(s===6?`At this level the cluster is pushed all the way right, onto the last three slots, jammed against the next downbeat: the "e" lands well after where the straight "&" would.`:`At this level the cluster is shifted right of the middle, so it leans late, hard: the "e" lands around where the straight "&" would.`):n%2?`With ${n} slots there's no slot exactly halfway, so the cluster leans into the second half of the beat.`:`With ${n} slots the "&" sits exactly halfway.`); }
     else if(state.timing==="AFOLD") note+=`One grid for every track, breathing across the half bar. Beat 1 (and beat 3) folds in: the "e" ${fmtTick(14.4*s/6)} ticks late and the "a" ${fmtTick(14.4*s/6)} early, bunching toward the "&". Beat 2 (and beat 4) folds out at half the amount: the "e" ${fmtTick(7.2*s/6)} ticks early and the "a" ${fmtTick(7.2*s/6)} late, framing the backbeat. Downbeats and every "&" stay put.`;
     else if(state.timing==="XFOLD") note+=`Each row is a group of tracks that land together. The hats and percs fold in toward the "&": the "e" of each beat ${fmtTick(14.4*s/6)} ticks late and the "a" ${fmtTick(14.4*s/6)} ticks early. Kick and Snare fold the other way, out toward the beats, at half the amount. This is the per-track FOLD; it needs each track to fire on its own ticks, which the module can't do without a code change.`;
     else if(state.timing==="LOTUS"){ const r=l=>(50+(DELUGE.LOTUS_PCT[l]-50)*s/6).toFixed(1); note+=`Each row is a group of tracks that swing at the same ratio. The off 16th of each 8th moves: Kick ${r("BD")}% (straight), Snare ${r("SD")}% (heading for triplet 2:1), hats ${r("H1")}% (dotted 3:1) and percs ${r("P1")}% (4:1). Several grids at once, none of them the same.`; }
@@ -956,7 +962,7 @@ function describe(){
     const lm=(l,k)=>msAt(lanePositions(state.timing,s,l)[k]-k*DELUGE.STEP);
     if(state.timing==="VOODOO") return `Kick ${lm("BD",0)} late, Snare ${lm("SD",0)}, clap ${lm("P1",0)}, Perc 2 ${lm("P2",0)}. Hats on the grid.`;
     if(state.timing==="FOLD") return `Every beat folds in toward the "&": "e" ${lm("H1",1)} late, "a" ${lm("H1",3)} early. Downbeats stay.`;
-    if(state.timing==="CLSTR"){ const n=DELUGE.DRNK_N[s-1]; return `${n} slots per beat, clustered on ${clstrSlots(s).slice(1).map(x=>x+1).join(", ")}${n%2?", leaning late":""}: "e" ${msAt(pos[1]-DELUGE.STEP)} late, ${Math.abs(pos[2]-2*DELUGE.STEP)<1e-6?'"&" on time':`"&" ${msAt(pos[2]-2*DELUGE.STEP)} late`}.`; }
+    if(state.timing==="CLSTR"){ const n=DELUGE.CLSTR_N[s-1], sh=DELUGE.CLSTR_SHIFTED[s-1]; return `${n} slots per beat, clustered on ${clstrSlots(s).slice(1).map(x=>x+1).join(", ")}${sh?", shifted right":n%2?", leaning late":""}: "e" ${msAt(pos[1]-DELUGE.STEP)} late, ${Math.abs(pos[2]-2*DELUGE.STEP)<1e-6?'"&" on time':`"&" ${msAt(pos[2]-2*DELUGE.STEP)} late`}.`; }
     if(state.timing==="AFOLD") return `Beats 1 and 3 fold in ("e" ${lm("H1",1)} late, "a" ${lm("H1",3)} early). Beats 2 and 4 fold out ("e" ${lm("H1",5)} early, "a" ${lm("H1",7)} late).`;
     if(state.timing==="XFOLD") return `Hats fold in ("e" ${lm("H1",1)} late, "a" ${lm("H1",3)} early). Kick and Snare fold out ("e" ${lm("BD",1)} early, "a" ${lm("BD",3)} late).`;
     if(state.timing==="LOTUS"){ const r=l=>(50+(DELUGE.LOTUS_PCT[l]-50)*s/6).toFixed(1); return `Kick straight, Snare swings ${r("SD")}%, hats ${r("H1")}%, percs ${r("P1")}%.`; }
@@ -1001,7 +1007,7 @@ function update(){
   document.getElementById("shufv").textContent=state.shuffle;
   document.querySelectorAll("#detents span").forEach((d,i)=>d.classList.toggle("on",i===state.shuffle));
   document.querySelectorAll("#timing [data-timing]").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.timing===state.timing)));
-  drawArchive(); drawRes();
+  drawArchive(); drawRes(); drawDl();
   drawFeels(); drawSlots(); retarget(); drawHalf(); readout();
 }
 
@@ -1009,7 +1015,7 @@ function update(){
 const tWrap=document.getElementById("timing"), tGroups={};
 for(const [g,cap] of [["stolper","Stolperbeats"],["deluge","Deluge"]]){
   const grp=document.createElement("div"); grp.className="tgroup "+g;
-  grp.innerHTML=`<div class="tbtns"></div><span class="tcap">${cap}</span>`+(g==="deluge"?`<div class="resrow"><span class="reslabel">Grid</span><div class="seg" id="resSeg" role="group" aria-label="Grid for the green styles"><button data-mod="0" aria-pressed="true">DELUGE 96</button><button data-mod="1" aria-pressed="false">MODULE 36</button></div><span class="resnote" id="resNote"></span></div>`:"");
+  grp.innerHTML=`<div class="tbtns"></div><span class="tcap">${cap}</span>`+(g==="deluge"?`<div class="resrow"><span class="reslabel">Grid</span><div class="seg" id="resSeg" role="group" aria-label="Grid for the green styles"><button data-mod="1" aria-pressed="true">MODULE 36</button><button data-mod="0" aria-pressed="false">DELUGE 96</button></div><span class="resnote" id="resNote"></span></div>`:"");
   tWrap.appendChild(grp); tGroups[g]=grp;
 }
 // The archived Deluge styles stay hidden until MORE is pressed, then join the row in order, with LESS at the end.
@@ -1033,6 +1039,11 @@ function drawRes(){
   row.classList.toggle("off",!green);
   document.querySelectorAll("#resSeg button").forEach(b=>{ b.setAttribute("aria-pressed",String((b.dataset.mod==="1")===state.mod)); b.disabled=!green; });
   document.getElementById("resNote").textContent=!green?"Green styles only":state.mod?`${curRes()} ticks per beat`:"";
+}
+// Download tables covers the selected style only, and not the four factory Timings.
+function drawDl(){
+  const b=document.getElementById("dlTables"), ok=isDeluge(state.timing);
+  b.disabled=!ok; b.title=ok?`Download ${state.timing} as tables, Stolperbeats rows and MIDI grooves (zip)`:"The factory Timings aren't included";
 }
 function drawArchive(){
   const t=TIMINGS.find(x=>x.key===state.timing), hidden=!!t.more&&!archiveOpen;
@@ -1209,6 +1220,147 @@ function setPlay(on){
   document.getElementById("playIcon").setAttribute("d",on?"M2 2h6v6H2z":"M2 1l7 4-7 4z");
 }
 document.getElementById("play").addEventListener("click",()=>setPlay(!playing));
+
+// ---------- Download tables: every mapped style (not the four factory Timings) as a zip ----------
+// tables.json and tables_96ppq.csv (step positions at 96 ticks per beat), stolperbeats_rows.txt (rows in the module's
+// own format: 16 step lengths + ticks per beat), MIDI grooves for Ableton, and a README. No firmware, no addresses.
+const GM={BD:36,SD:38,H1:42,H2:46,P1:39,P2:63};
+const TRACK_NAME={BD:"Kick",SD:"Snare",H1:"Hihat1",H2:"Hihat2",P1:"Perc1",P2:"Perc2"};
+function styleTables(only){
+  const keep={mod:state.mod,bpm:state.bpm,timing:state.timing,shuffle:state.shuffle};
+  state.mod=false; state.bpm=90; // VOODOO is set in ms, so its ticks are taken at 90 bpm
+  const out=[];
+  for(const t of TIMINGS.filter(x=>x.deluge&&(!only||x.key===only))){
+    state.timing=t.key;
+    const perTrack=!!(t.voice||t.split), levels=[];
+    for(let L=1;L<=6;L++){
+      state.shuffle=L;
+      const r=v=>+v.toFixed(3);
+      if(perTrack) levels.push({level:L,tracks:Object.fromEntries(LANES.map(l=>[TRACK_NAME[l.key],lanePositions(t.key,L,l.key).map(r)]))});
+      else levels.push({level:L,steps:positions(t.key,L).map(r)});
+    }
+    out.push({style:t.key,about:t.desc,main:!t.more,perTrack,levels,module:moduleRows(t.key)});
+  }
+  Object.assign(state,keep);
+  return out;
+}
+// Stolperbeats-format rows (level 0 straight, then 1-6) for the styles that fit as plain tables.
+function moduleRows(key){
+  let beats=null;
+  if(key==="HOPP"||key==="DEEP"||key==="FOLD") beats=MODULE[key].map(([N,b])=>[N,b]);
+  if(key==="CLSTR") beats=[1,2,3,4,5,6].map(L=>[4*DELUGE.CLSTR_N[L-1],clstrSlots(L).map(x=>x*4)]);
+  if(!beats) return null;
+  const row=(N,b)=>{ const lens=b.map((x,i)=>(i<3?b[i+1]:N)-x); return {ticksPerBeat:N,stepLengths:[...lens,...lens,...lens,...lens]}; };
+  return [row(16,[0,4,8,12]),...beats.map(([N,b])=>row(N,b))];
+}
+function tablesReadme(st){
+  const k=st.style, rows=!!st.module, files=[
+    ["README.txt","this file"],
+    [`${k}.json`,"step positions, 96 ticks per beat"],
+    [`${k}_96ppq.csv`,`the same, one row per level${st.perTrack?" and track":""}`],
+    ...(rows?[[`${k}_stolperbeats_rows.txt`,"the style in Stolperbeats' own row format"]]:[]),
+    ["midi/","one-bar groove clips for Ableton Live"]];
+  const w=Math.max(...files.map(f=>f[0].length))+3;
+  return [
+`${k}: ${st.about}`,
+"Stolperbeats visualiser, mapped timing table",
+"For Educational Purposes Only.",
+"",
+"",
+"WHAT'S IN THIS ZIP",
+"",
+...files.map(([n,d])=>"  "+n.padEnd(w)+d),
+"",
+"",
+"READING THE TABLES",
+"",
+"  - Levels 1 to 6 are listed. Level 0 is always straight 16ths.",
+"  - A bar has 16 steps (16th notes). Each number is the tick that step plays on.",
+"  - 96 ticks per beat, 384 per bar. A straight 16th lands every 24 ticks: 0, 24, 48, 72 ...",
+...(st.perTrack?["  - This style moves tracks separately, so each track (Kick, Snare, Hihat1, Hihat2, Perc1, Perc2)","    has its own row."]:[]),
+...(k==="VOODOO"?["  - VOODOO's drag is set in ms. These ticks are worked out at 90 bpm."]:[]),
+"",
+"",
+"MIDI GROOVES IN ABLETON LIVE",
+"",
+"  1. Drag a clip from midi/ onto a MIDI track.",
+"  2. Right-click the clip and choose Extract Groove(s).",
+"  3. Apply the groove from the Groove Pool to your own clips.",
+"",
+"  The clips are one bar at 90 bpm, 960 ticks per beat.",
+...(st.perTrack?["  This style has one clip per track, so give each drum track its own groove.",
+                 "  Notes: Kick 36, Snare 38, Hihat1 42, Hihat2 46, Perc1 39, Perc2 63."]
+               :["  Each clip is a closed hat (note 42) on every 16th."]),
+...(rows?["","","STOLPERBEATS-FORMAT ROWS","",
+"  One row per level: the ticks per beat, then 16 step lengths (one bar of 16ths).",
+"  Each step plays at the running total of the lengths before it.",
+"  Level 0 is straight. Every grid is 16 to 36 ticks per beat, like the module's own."]:[]),
+...(k==="DRNK"?["","","  DRNK is Trip's patterns, so there are no separate Stolperbeats rows: on the module it is Trip."]:[]),
+"",
+"",
+"PLEASE NOTE",
+"",
+"  - Unofficial and independent. Not affiliated with, endorsed by or supported by",
+"    Making Sound Machines or Synthstrom Audible.",
+"  - Stolperbeats and its firmware belong to Making Sound Machines.",
+"  - No firmware is included, only this style's timing table.",
+""].join("\n");
+}
+// --- tiny writers: Standard MIDI File (format 0) and a stored (uncompressed) zip ---
+function midiFile(ticks96,note,name){
+  const vlq=n=>{ const b=[n&0x7f]; while((n>>=7)>0) b.unshift((n&0x7f)|0x80); return b; };
+  const t=ticks96.map(x=>Math.round(x*10)), ev=[];
+  t.forEach((x,i)=>{ const next=i<15?t[i+1]:3840, off=x+Math.max(1,Math.min(120,next-x-1)); ev.push([x,1,[0x99,note,100]],[off,0,[0x89,note,0]]); });
+  ev.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const nm=[...new TextEncoder().encode(name)];
+  let trk=[0,0xff,0x03,...vlq(nm.length),...nm, 0,0xff,0x51,3,0x0a,0x2c,0x2b, 0,0xff,0x58,4,4,2,24,8], now=0;
+  for(const [at,,bytes] of ev){ trk.push(...vlq(at-now),...bytes); now=at; }
+  trk.push(...vlq(Math.max(0,3840-now)),0xff,0x2f,0);
+  const u32=n=>[(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255];
+  return new Uint8Array([0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,0x03,0xc0, 0x4d,0x54,0x72,0x6b,...u32(trk.length),...trk]);
+}
+const CRC=(()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xedb88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+const crc32=b=>{ let c=0xffffffff; for(const x of b) c=CRC[(c^x)&255]^(c>>>8); return (c^0xffffffff)>>>0; };
+function zip(files){ // files: [[name, Uint8Array|string]]
+  const enc=new TextEncoder(), parts=[], central=[]; let offset=0;
+  const le=(n,w)=>Array.from({length:w},(_,i)=>(n>>>(8*i))&255);
+  for(const [name,data] of files){
+    const d=typeof data==="string"?enc.encode(data):data, nm=enc.encode(name), crc=crc32(d);
+    const head=[...le(0x04034b50,4),20,0,0,0,0,0,0,0,0x21,0,...le(crc,4),...le(d.length,4),...le(d.length,4),...le(nm.length,2),0,0];
+    parts.push(new Uint8Array(head),nm,d);
+    central.push(new Uint8Array([...le(0x02014b50,4),20,0,20,0,0,0,0,0,0,0,0x21,0,...le(crc,4),...le(d.length,4),...le(d.length,4),...le(nm.length,2),0,0,0,0,0,0,0,0,0,0,0,0,...le(offset,4)]),nm);
+    offset+=head.length+nm.length+d.length;
+  }
+  const cdSize=central.reduce((a,b)=>a+b.length,0);
+  const end=new Uint8Array([...le(0x06054b50,4),0,0,0,0,...le(files.length,2),...le(files.length,2),...le(cdSize,4),...le(offset,4),0,0]);
+  return new Blob([...parts,...central,end],{type:"application/zip"});
+}
+function buildTablesZip(key){
+  const st=styleTables(key)[0], k=st.style, files=[["README.txt",tablesReadme(st)]];
+  files.push([`${k}.json`,JSON.stringify({style:k,about:st.about,note:"For Educational Purposes Only. Unofficial; no firmware included.",ticksPerBeat:96,ticksPerBar:384,perTrack:st.perTrack,levels:st.levels,...(st.module?{stolperbeatsRows:st.module}:{})},null,1)]);
+  const csv=["level,track,"+ALL.map(i=>"step"+(i+1)).join(",")];
+  for(const L of st.levels){
+    if(st.perTrack) for(const [tr,v] of Object.entries(L.tracks)) csv.push([L.level,tr,...v].join(","));
+    else csv.push([L.level,"all",...L.steps].join(","));
+  }
+  files.push([`${k}_96ppq.csv`,csv.join("\n")+"\n"]);
+  if(st.module){
+    let rows=`${k}: ${st.about}\nStolperbeats-format rows. For Educational Purposes Only.\n\nlevel  ticks/beat  step lengths (one bar of 16ths)\n`;
+    st.module.forEach((r,L)=>rows+=`${String(L).padEnd(7)}${String(r.ticksPerBeat).padEnd(12)}${r.stepLengths.join(" ")}\n`);
+    files.push([`${k}_stolperbeats_rows.txt`,rows]);
+  }
+  for(const L of st.levels){
+    if(st.perTrack) for(const l of LANES){ const tr=TRACK_NAME[l.key]; files.push([`midi/${k}_L${L.level}_${tr}.mid`,midiFile(L.tracks[tr],GM[l.key],`${k} L${L.level} ${tr}`)]); }
+    else files.push([`midi/${k}_L${L.level}.mid`,midiFile(L.steps,42,`${k} L${L.level}`)]);
+  }
+  return {blob:zip(files),count:files.length};
+}
+document.getElementById("dlTables").addEventListener("click",()=>{
+  if(!isDeluge(state.timing)) return;
+  const {blob}=buildTablesZip(state.timing), a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=`stolperbeats-${state.timing}-tables.zip`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+});
 
 drawKits(); drawFeels(); drawBeats(); update();
 </script>
