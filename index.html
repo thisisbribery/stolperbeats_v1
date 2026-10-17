@@ -544,6 +544,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
         <li>Trigger pulse length, and how the Feels appear on MIDI out, haven't been traced.</li>
         <li>Only the DEEP and FOLD tables have been tried on a real module (by ear, in that test build). Nothing has been measured with instruments.</li>
         <li>The 808, 909 and 606 kits are synthesised approximations, not samples.</li>
+        <li>Changes while playing. The firmware fires steps in order against a tick counter, so a change can move steps that haven't fired yet but never fires one twice. The player here works the same way: every change lands within about 0.1 s, each step fires once per bar, and a step a change moves behind the playhead fires straight away. What the module does in that last case (fire late or skip it), and how its tick counter carries across a Shuffle change that alters ticks per beat, hasn't been traced in the code yet.</li>
         <li>Here Linear looks at the pattern, so a track muted with M still takes priority. The firmware's Linear reads the pattern arrays too, so this is likely the same on the module (not tested on hardware).</li>
         <li>Stut is a proposed Feel, not on the module. Its placement follows common trap production practice, not measured data: rolls at the end of the bar and just before snares, and triplet rolls on steps 7 and 15 in Metro Boomin and Southside style trap (<a href="https://emastered.com/blog/trap-drum-patterns" style="color:inherit">eMastered</a>); 32nd-triplet rolls at the end of a loop with a volume crescendo (<a href="https://ch41rm4n.com/2020/02/17/trap-hats-4-hi-hat-techniques-every-trap-producer-uses/" style="color:inherit">Ch41rm4n</a>); ×2 to ×8 subdivisions with a volume ramp (<a href="https://padwolf.app/learn/how-to-make-hi-hat-rolls/" style="color:inherit">Padwolf</a>). Boom bap rarely rolls its hats (<a href="https://blog.landr.com/trap-hats/" style="color:inherit">LANDR</a>). Here it fires every bar; real tracks often save rolls for every second or fourth bar.</li>
       </ul>
@@ -1717,9 +1718,11 @@ function voice(lane,t,k,roll,lvl){
 function barEvents(b=viewBar){ return atBar(b,()=>{
   const N=curRes(), spb=60/state.bpm;
   const list=[];
-  for(const L of LANES){ const ticks=laneTicks(L.key); for(let k=0;k<16;k++) if(pattern[L.key][k]&&!linearMuted(L.key,k)) list.push({t:ticks[k]/N*spb,lane:L.key,k}); }
-  for(const r of rollTicks()) list.push({t:r.t/N*spb,lane:"H2",k:r.k,roll:true});
-  for(const r of stutTicks()) list.push({t:r.t/N*spb,lane:"H1",k:r.k,lvl:r.lvl});
+  // id names each hit by its step, not its time, so a replan knows which hits of this bar have already fired
+  for(const L of LANES){ const ticks=laneTicks(L.key); for(let k=0;k<16;k++) if(pattern[L.key][k]&&!linearMuted(L.key,k)) list.push({t:ticks[k]/N*spb,lane:L.key,k,id:L.key+k}); }
+  const sub={}; // ratchets: the j-th retrigger after step k
+  for(const r of rollTicks()){ const j=sub["r"+r.k]=(sub["r"+r.k]||0)+1; list.push({t:r.t/N*spb,lane:"H2",k:r.k,roll:true,id:`r${r.k}.${j}`}); }
+  for(const r of stutTicks()){ const j=sub["s"+r.k]=(sub["s"+r.k]||0)+1; list.push({t:r.t/N*spb,lane:"H1",k:r.k,lvl:r.lvl,id:`s${r.k}.${j}`}); }
   list.sort((a,b)=>a.t-b.t); return {list,dur:4*spb,bar:b};
 }); }
 const LOOK=0.1; // seconds scheduled ahead of the audio clock
@@ -1731,22 +1734,25 @@ function schedule(){
     if(evI>=cur.list.length){
       const last=bars[bars.length-1], next=last.start+last.dur;
       if(next>horizon) break;
-      cur=barEvents((last.bar+1)%BARS); evI=0; bars.push({start:next,dur:cur.dur,bar:cur.bar}); if(bars.length>4) bars.shift(); continue;
+      cur=barEvents((last.bar+1)%BARS); evI=0; bars.push({start:next,dur:cur.dur,bar:cur.bar,fired:new Set()}); if(bars.length>4) bars.shift(); continue;
     }
-    const e=cur.list[evI], t=bars[bars.length-1].start+e.t;
+    const B=bars[bars.length-1], e=cur.list[evI], t=B.start+e.t;
     if(t>horizon) break;
-    if(!muted[e.lane]) voice(e.lane,t,e.k,e.roll,e.lvl); evI++;
+    // A hit a replan moved behind the clock fires now, like the module's step compare catching up: never twice, never lost
+    if(!muted[e.lane]) voice(e.lane,Math.max(t,ctx.currentTime+0.003),e.k,e.roll,e.lvl);
+    B.fired.add(e.id); evI++;
   }
   schedTo=Math.max(schedTo,horizon);
 }
-// Rebuild the bar being scheduled from the current settings and carry on from where scheduling got to. Hits already
-// handed to the audio clock (at most LOOK seconds ahead) play as they were; everything after uses the new settings.
+// Rebuild the bar being scheduled from the current settings and carry on, the way the firmware does it: it fires
+// steps in order against a tick counter, so a change can move steps that haven't fired yet but can never fire a step
+// twice. Here every hit has an id (its step), each bar remembers the ids it has fired, and a replan keeps only the
+// hits not fired yet. Hits already on the audio clock (at most LOOK seconds ahead) play as they were.
 // A tempo change keeps the playhead's place in the bar.
 function replan(){
   const b=bars[bars.length-1], now=ctx.currentTime, dur=4*60/state.bpm;
   if(Math.abs(dur-b.dur)>1e-9){ if(now>b.start) b.start=now-(now-b.start)/b.dur*dur; b.dur=dur; }
-  cur=barEvents(b.bar);
-  evI=cur.list.findIndex(e=>b.start+e.t>schedTo+1e-6); if(evI<0) evI=cur.list.length;
+  cur=barEvents(b.bar); cur.list=cur.list.filter(e=>!b.fired.has(e.id)); evI=0;
 }
 function frame(){
   const now=ctx.currentTime, b=[...bars].reverse().find(x=>x.start<=now);
@@ -1760,7 +1766,7 @@ function setPlay(on){
   const btn=document.getElementById("play");
   if(on){
     ensureAudio();
-    cur=barEvents(0); evI=0; schedTo=0; replanDue=false; bars=[{start:ctx.currentTime+0.1,dur:cur.dur,bar:0}]; // always from the top of bar 1
+    cur=barEvents(0); evI=0; schedTo=0; replanDue=false; bars=[{start:ctx.currentTime+0.1,dur:cur.dur,bar:0,fired:new Set()}]; // always from the top of bar 1
     timer=setInterval(schedule,20); schedule(); raf=requestAnimationFrame(frame);
     bar.playhead.setAttribute("visibility","visible");
   } else { clearInterval(timer); cancelAnimationFrame(raf); bar.playhead.setAttribute("visibility","hidden"); playBar=-1; drawBarTabs(); }
