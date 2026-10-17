@@ -237,6 +237,20 @@ main{padding-top:14px}
 .beats{gap:5px}
 .bbtn{font-size:12px;padding:2px 9px}
 .mine{padding:6px 14px;font-size:13px}
+/* Bar picker: Kick and Snare run 4 bars, each tab shows a mini map of that bar's Kick (top) and Snare (bottom) */
+.barsel{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+.barsel .kitlabel{font-size:12px;color:var(--muted);font-weight:600}
+.bartabs{display:inline-flex;gap:5px}
+.btab{position:relative;display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:3px 8px 3px 7px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums}
+.btab svg{display:block}
+.btab .mk{fill:var(--muted);opacity:.22}
+.btab .mk.on{fill:var(--text);opacity:.8}
+.btab[aria-pressed=true]{border-color:var(--text);color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.btab[aria-pressed=true] .mk.on{opacity:1}
+.btab.playing::after{content:"";position:absolute;left:8px;right:8px;bottom:-4px;height:2px;border-radius:2px;background:var(--accent)}
+.follow{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.follow input{margin:0;accent-color:var(--accent)}
+.barnote{font-size:12px;color:var(--muted)}
 /* VISUALISER | CREATOR switch, and the timing creator, which takes the Timing row's place at the same size */
 .pagehead{grid-template-columns:1fr auto auto;grid-template-areas:"title mode theme" "lede lede lede"}
 .pagehead .modesw{grid-area:mode}
@@ -350,9 +364,9 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
   </section>
 
   <section class="card">
-    <div class="barhead"><h2>One bar</h2><span class="status" id="status"></span>
+    <div class="barhead"><h2 id="barTitle">Bar 1 of 4</h2><span class="status" id="status"></span>
       <div class="barctl">
-        <button class="dl" id="dlMidi" title="Download this bar as a MIDI file: what plays, with the Timing, Shuffle, Feel, Rolls and Stut. Muted tracks and hits Linear silences are left out.">Download MIDI</button>
+        <button class="dl" id="dlMidi" title="Download all 4 bars as a MIDI file: what plays, with the Timing, Shuffle, Feel, Rolls and Stut. Muted tracks and hits Linear silences are left out.">Download MIDI</button>
         <span class="kitlabel">Linear</span><div class="tiles" id="linear" role="group" aria-label="Linear"></div>
         <span class="kitlabel">Kit</span><div class="seg" id="kits" role="group" aria-label="Drum kit"></div>
       </div>
@@ -368,7 +382,14 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
         <button class="clear" id="clear">Clear your beat</button>
       </div>
     </div>
-    <div class="scroll"><svg id="bar" viewBox="0 0 1000 272" role="img" aria-label="One bar on six tracks. Click or drag to place hits."></svg></div>
+    <div class="barsel">
+      <span class="kitlabel">Bar</span>
+      <div class="bartabs" id="barTabs" role="group" aria-label="Bar shown on the grid"></div>
+      <label class="follow" title="While playing, the grid shows the bar that's playing. Pick a bar to stop following and edit it while the loop runs."><input type="checkbox" id="follow" checked> Follow</label>
+      <button class="dl" id="copyBar" title="Copy this bar's Kick and Snare to the other three bars">Copy to all bars</button>
+      <span class="barnote">Kick and Snare run 4 bars. Hats and Percs loop 1 bar under them.</span>
+    </div>
+    <div class="scroll"><svg id="bar" viewBox="0 0 1000 272" role="img" aria-label="One bar of the 4-bar pattern on six tracks. Click or drag to place hits."></svg></div>
     <div class="legend">
       <span><i style="background:var(--on)"></i>on the grid</span>
       <span><i style="background:var(--late)"></i>pushed late</span>
@@ -377,7 +398,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <span><i class="rolltick"></i>ratchets (Rolls, Stut)</span>
       <span><i style="border:1.5px dashed var(--muted)"></i>silenced by Linear</span>
     </div>
-    <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it.</p>
+    <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it. Pick a Bar tab to write Kick and Snare in bars 2 to 4.</p>
   </section>
 
   <section class="card" id="halfCard">
@@ -398,7 +419,8 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <p><b>MORE.</b> The archive, all proposed: CLSTR (DRNK inside out: the "e", "&" and "a" cluster mid-beat instead of leaving a gap, and lean further late as the level rises), FOLD (the "e" and "a" of every beat fold in toward the "&"), AFOLD (FOLD alternating: in on beats 1 and 3, out on 2 and 4), XFOLD (the original FOLD: hats fold in while Kick and Snare fold out), TRIO (quarter-note triplet pull), PROG (a 7+9 split, Tool style), VOODOO (D'Angelo's dragging rhythm section), LOTUS (a swing ratio per track), SKEW (a clock per track), DROP, FLOP and FAFF (HOPP and DRNK hybrids), BALL and TOSS (bouncing and thrown balls), SWAY (the tempo breathing across the bar) and LIMP (2+2+2+3 aksak).</p>
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
       <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
-      <p><b>Download MIDI.</b> The button above the grid saves the bar exactly as it plays: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's one bar of GM drums (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat.</p>
+      <p><b>Four bars.</b> Like the module, Kick and Snare run 4 bars (64 steps) and the hats and percs loop 1 bar (16 steps) under them. The Bar tabs pick which bar the grid shows and edits; each tab has a mini map of its Kick (top) and Snare (bottom). Follow keeps the grid on the bar that's playing; pick a tab while playing to stay on that bar and edit it while the loop runs. In bars 2 to 4 the hats and percs are dimmed because they're bar 1 repeating: editing them there edits the one bar they share. Copy to all copies the shown bar's Kick and Snare into the other three. The presets repeat one bar of Kick and Snare four times.</p>
+      <p><b>Download MIDI.</b> The button above the grid saves all 4 bars exactly as they play: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat.</p>
       <p><b>Creator.</b> The CREATOR switch at the top swaps the Timing row for a table maker, with the same grid, kits, Feels and playback. Start from a Timing or from straight, then drag the steps in the half-bar view while it plays. The Shuffle slider picks the level you're editing, and a level you haven't touched yet starts as a copy of the one before. Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. So it can go straight into a test build. Save adds it under MORE, Export saves its 7 rows as a file, and Import loads one back, including a style's JSON from Download tables. Saved Timings stay in this browser only, so export the ones you want to keep.</p>
       <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
     </div>
@@ -600,18 +622,41 @@ const BEATS=[
   {name:"Jungle",     BD:[0,2,10],         SD:[4,7,9,12,14], H1:[0,2,4,6,8,10,12,13,14],        H2:[11],         P1:[3,6,11,15],    P2:[1,5,8,13]},
   {name:"Dembow",     BD:[0,4,8,12],       SD:[3,6,11,14],   H1:EIGHTHS,                        H2:[],           P1:[3,6,7,11,14,15], P2:[2,5,10,13]}
 ];
-const toArr=steps=>{ const a=Array(16).fill(0); steps.forEach(i=>a[i]=1); return a; };
+// The module's pattern lengths (manual, Pattern Edit): Kick and Snare run 4 bars (4 x 16 = 64 steps),
+// Hihat 1, Hihat 2, Perc 1 and Perc 2 run 1 bar (16 steps) that repeats under them.
+const BARS=4, LONG=new Set(["BD","SD"]), laneLen=l=>LONG.has(l)?16*BARS:16;
+// A 1-bar step list on a 4-bar track repeats in every bar.
+const toArr=(steps,len=16)=>{ const a=Array(len).fill(0); for(let b=0;b<len/16;b++) steps.forEach(i=>a[b*16+i]=1); return a; };
 const CUSTOM=BEATS.length, STORE="stolperbeats-shuffle-map:your-beat";
-const emptyPattern=()=>Object.fromEntries(LANES.map(L=>[L.key,Array(16).fill(0)]));
+const emptyPattern=()=>Object.fromEntries(LANES.map(L=>[L.key,Array(laneLen(L.key)).fill(0)]));
+// Saved beats from before the 4-bar change hold 16 Kick and Snare steps: repeat them across the 4 bars.
+function fitPattern(p){
+  if(!p||!LANES.every(L=>Array.isArray(p[L.key])&&(p[L.key].length===16||p[L.key].length===laneLen(L.key)))) return null;
+  const out={}; for(const L of LANES){ const a=p[L.key].map(v=>v?1:0), n=laneLen(L.key); out[L.key]=Array.from({length:n},(_,i)=>a[i%a.length]); }
+  return out;
+}
 let custom=emptyPattern();
-try{ const saved=JSON.parse(localStorage.getItem(STORE)); if(saved&&LANES.every(L=>Array.isArray(saved[L.key])&&saved[L.key].length===16)) custom=saved; }catch(e){}
+try{ const saved=fitPattern(JSON.parse(localStorage.getItem(STORE))); if(saved) custom=saved; }catch(e){}
 function saveCustom(){ try{ localStorage.setItem(STORE,JSON.stringify(custom)); }catch(e){} }
-let pattern={}, beatIdx=0, edited=false;
+// data holds the full tracks. pattern is a 16-step window onto them for one bar (barCtx): Kick and Snare show
+// that bar's 16 steps, the 1-bar tracks always show their one bar. Everything that reads pattern[lane][k]
+// (grid, Linear, Feels, Rolls, Stut, playback) works on whichever bar barCtx points at.
+let data={}, pattern={}, beatIdx=0, edited=false, barCtx=0, viewBar=0;
 const muted={};
+const isStep=p=>typeof p==="string"&&/^\d+$/.test(p);
+function windowOf(a){
+  return new Proxy(a,{
+    get(t,p){ if(p==="length") return 16; if(isStep(p)){ const k=+p; return k<16?t[(t.length>16?barCtx*16:0)+k]:undefined; } return t[p]; },
+    set(t,p,v){ if(isStep(p)&&+p<16){ t[(t.length>16?barCtx*16:0)+ +p]=v; return true; } t[p]=v; return true; }
+  });
+}
+function bindPattern(){ pattern={}; for(const L of LANES) pattern[L.key]=windowOf(data[L.key]); }
+function atBar(b,fn){ const was=barCtx; barCtx=b; try{ return fn(); } finally{ barCtx=was; } }
 function loadBeat(i){
   beatIdx=i; edited=false;
-  if(i===CUSTOM){ pattern=custom; return; } // edits write straight into the saved slot
-  pattern={}; for(const L of LANES) pattern[L.key]=toArr(BEATS[i][L.key]);
+  if(i===CUSTOM) data=custom; // edits write straight into the saved slot
+  else { data={}; for(const L of LANES) data[L.key]=toArr(BEATS[i][L.key],laneLen(L.key)); }
+  bindPattern();
 }
 loadBeat(0);
 const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:true,creator:false}; // the green styles start on MODULE 36
@@ -837,7 +882,7 @@ function drawBar(){
   for(const L of LANES){
     L.label.setAttribute("text-decoration",muted[L.key]?"line-through":"none");
     L.label.setAttribute("opacity",muted[L.key]?.45:1);
-    L.sub.textContent=muted[L.key]?"muted":KITS[state.kit][L.key];
+    L.sub.textContent=muted[L.key]?"muted":viewBar&&!LONG.has(L.key)?"1-bar loop":KITS[state.kit][L.key];
     const m=!!muted[L.key];
     L.mute.setAttribute("aria-pressed",String(m));
     L.mute.rect.setAttribute("fill",m?css("orange"):css("chip"));
@@ -848,8 +893,8 @@ function drawBar(){
     const g=hits[L.key][k], on=pattern[L.key][k], f=shown[L.key][k], moved=Math.abs(f-k/16)>1e-6;
     const c=colorFor(target[L.key][k]-k/16);
     g.empty.setAttribute("cx",BX(f)); g.empty.setAttribute("visibility",on?"hidden":"visible");
-    const lin=on&&linearMuted(L.key,k);
-    g.dot.setAttribute("opacity",muted[L.key]?.25:lin?.85:1);
+    const lin=on&&linearMuted(L.key,k), loop=viewBar&&!LONG.has(L.key)?.6:1; // bars 2-4: the 1-bar tracks are bar 1 repeating
+    g.dot.setAttribute("opacity",(muted[L.key]?.25:lin?.85:1)*loop);
     g.dot.setAttribute("stroke",lin?c:"none"); g.dot.setAttribute("stroke-width",lin?1.5:0); g.dot.setAttribute("stroke-dasharray",lin?"3 2":"none");
     g.dot.setAttribute("cx",BX(f)); g.dot.setAttribute("fill",lin?css("panel"):c); g.dot.setAttribute("visibility",on?"visible":"hidden");
     g.ghost.setAttribute("visibility",on&&moved?"visible":"hidden");
@@ -858,6 +903,7 @@ function drawBar(){
   }
   drawRolls();
   if(hoverCell) placeHover(hoverCell);
+  drawBarTabs();
 }
 function drawSlots(){
   gSlots.innerHTML="";
@@ -1204,6 +1250,40 @@ function drawBeats(){
     : `· ${BEATS[beatIdx].name}${edited?" (edited)":""}`;
 }
 
+// ---------- bar picker: which of the 4 bars the grid shows and edits ----------
+const tabsWrap=document.getElementById("barTabs"), followIn=document.getElementById("follow");
+let playBar=-1; // the bar playing now, -1 when stopped
+const tabBtns=[...Array(BARS).keys()].map(b=>{
+  const btn=document.createElement("button"); btn.className="btab"; btn.type="button";
+  btn.setAttribute("aria-label",`Bar ${b+1}`);
+  btn.innerHTML=`<span>${b+1}</span><svg width="48" height="11" viewBox="0 0 48 11" aria-hidden="true"></svg>`;
+  const svg=btn.querySelector("svg"); btn.marks={BD:[],SD:[]};
+  ["BD","SD"].forEach((l,r)=>{ for(let k=0;k<16;k++) btn.marks[l].push(el("rect",{x:k*3,y:r*6,width:2,height:4,rx:.5,class:"mk"},svg)); });
+  btn.addEventListener("click",()=>{ if(playing){ followIn.checked=false; } setViewBar(b); });
+  tabsWrap.appendChild(btn); return btn;
+});
+function drawBarTabs(){
+  tabBtns.forEach((btn,b)=>{
+    btn.setAttribute("aria-pressed",String(b===viewBar));
+    btn.classList.toggle("playing",b===playBar);
+    for(const l of ["BD","SD"]) btn.marks[l].forEach((m,k)=>m.classList.toggle("on",!!data[l][b*16+k]));
+  });
+  document.getElementById("barTitle").textContent=`Bar ${viewBar+1} of ${BARS}`;
+  document.getElementById("copyBar").textContent=`Copy bar ${viewBar+1} to all`;
+  bar.playhead.setAttribute("opacity",playBar<0||playBar===viewBar?1:.25);
+}
+function setViewBar(b){
+  if(b===viewBar) return drawBarTabs();
+  viewBar=barCtx=b; setHover(null);
+  target=computeTargets(); shown=cloneT(target); drawBar(); // Slop's hats and Linear depend on this bar's Kick and Snare
+}
+document.getElementById("copyBar").addEventListener("click",()=>{
+  for(const l of LONG){ const src=data[l].slice(viewBar*16,viewBar*16+16); for(let b=0;b<BARS;b++) if(b!==viewBar) src.forEach((v,k)=>data[l][b*16+k]=v); }
+  if(beatIdx===CUSTOM) saveCustom(); else edited=true;
+  drawBeats(); drawBar();
+});
+followIn.addEventListener("change",()=>{ if(followIn.checked&&playBar>=0) setViewBar(playBar); });
+
 // ---------- audio: exact step times on the audio clock; changes apply from the next bar ----------
 let ctx=null, OUT=null, noiseBuf=null, playing=false, timer=null, raf=null, cur=null, evI=0, bars=[], openHat=null;
 function ensureAudio(){
@@ -1271,20 +1351,21 @@ function voice(lane,t,k,roll,lvl){
   if(lane==="H2"){ const dur=roll?0.07:0.45; openHat={gs:[].concat(VOICES[state.kit].H2(t,roll?0.75:1,dur)).filter(Boolean),end:t+dur}; return; }
   VOICES[state.kit][lane](t,lvl??(k%4===0?1:(k%2===0?0.8:0.6)));
 }
-function barEvents(){
+// One bar's events (b = 0 to 3). Kick and Snare come from that bar; the 1-bar tracks are the same every bar.
+function barEvents(b=viewBar){ return atBar(b,()=>{
   const N=curRes(), spb=60/state.bpm;
   const list=[];
   for(const L of LANES){ const ticks=laneTicks(L.key); for(let k=0;k<16;k++) if(pattern[L.key][k]&&!linearMuted(L.key,k)) list.push({t:ticks[k]/N*spb,lane:L.key,k}); }
   for(const r of rollTicks()) list.push({t:r.t/N*spb,lane:"H2",k:r.k,roll:true});
   for(const r of stutTicks()) list.push({t:r.t/N*spb,lane:"H1",k:r.k,lvl:r.lvl});
-  list.sort((a,b)=>a.t-b.t); return {list,dur:4*spb};
-}
+  list.sort((a,b)=>a.t-b.t); return {list,dur:4*spb,bar:b};
+}); }
 function schedule(){
   for(;;){
     if(evI>=cur.list.length){
       const last=bars[bars.length-1], next=last.start+last.dur;
       if(next>ctx.currentTime+0.12) break;
-      cur=barEvents(); evI=0; bars.push({start:next,dur:cur.dur}); if(bars.length>4) bars.shift(); continue;
+      cur=barEvents((last.bar+1)%BARS); evI=0; bars.push({start:next,dur:cur.dur,bar:cur.bar}); if(bars.length>4) bars.shift(); continue;
     }
     const e=cur.list[evI], t=bars[bars.length-1].start+e.t;
     if(t>ctx.currentTime+0.12) break;
@@ -1293,17 +1374,20 @@ function schedule(){
 }
 function frame(){
   const now=ctx.currentTime, b=[...bars].reverse().find(x=>x.start<=now);
-  if(b){ const x=BX(Math.min(1,(now-b.start)/b.dur)); bar.playhead.setAttribute("x1",x); bar.playhead.setAttribute("x2",x); }
+  if(b){
+    if(b.bar!==playBar){ playBar=b.bar; if(followIn.checked) setViewBar(playBar); else drawBarTabs(); }
+    const x=BX(Math.min(1,(now-b.start)/b.dur)); bar.playhead.setAttribute("x1",x); bar.playhead.setAttribute("x2",x);
+  }
   raf=requestAnimationFrame(frame);
 }
 function setPlay(on){
   const btn=document.getElementById("play");
   if(on){
     ensureAudio();
-    cur=barEvents(); evI=0; bars=[{start:ctx.currentTime+0.1,dur:cur.dur}];
+    cur=barEvents(0); evI=0; bars=[{start:ctx.currentTime+0.1,dur:cur.dur,bar:0}]; // always from the top of bar 1
     timer=setInterval(schedule,20); schedule(); raf=requestAnimationFrame(frame);
     bar.playhead.setAttribute("visibility","visible");
-  } else { clearInterval(timer); cancelAnimationFrame(raf); bar.playhead.setAttribute("visibility","hidden"); }
+  } else { clearInterval(timer); cancelAnimationFrame(raf); bar.playhead.setAttribute("visibility","hidden"); playBar=-1; drawBarTabs(); }
   playing=on; btn.setAttribute("aria-pressed",String(on));
   btn.querySelector("span").textContent=on?"Stop":"Play";
   document.getElementById("playIcon").setAttribute("d",on?"M2 2h6v6H2z":"M2 1l7 4-7 4z");
@@ -1315,15 +1399,16 @@ document.getElementById("play").addEventListener("click",()=>setPlay(!playing));
 // own format: 16 step lengths + ticks per beat), MIDI grooves for Ableton, and a README. No firmware, no addresses.
 const GM={BD:36,SD:38,H1:42,H2:46,P1:39,P2:63};
 
-// ---------- Download MIDI: the bar on the grid, exactly as it plays ----------
-// One bar of 4/4 at the current tempo, GM drums on channel 10, 960 ticks per quarter (hits round to the nearest 1/960
+// ---------- Download MIDI: the 4-bar pattern, exactly as it plays ----------
+// Four bars of 4/4 at the current tempo, GM drums on channel 10, 960 ticks per quarter (hits round to the nearest 1/960
 // of a beat, under 0.4 ms at 90 bpm). Same events the player schedules: every hit at its played tick (Timing, Shuffle,
 // Feel, Hear straight), Rolls and Stut ratchets, accents as velocity. Muted tracks and Linear-silenced hits are left out.
 function gridMidi(){
-  const PPQ=960, BAR=4*PPQ, spb=60/state.bpm, u=[];
-  const ev=barEvents().list.filter(e=>!muted[e.lane]).map(e=>({
-    at:Math.min(BAR-1,Math.round(e.t/spb*PPQ)), note:GM[e.lane],
-    vel:Math.max(1,Math.min(127,Math.round(115*(e.roll?0.75:e.lvl??(e.k%4===0?1:e.k%2===0?0.8:0.6)))))}));
+  // All 4 bars: Kick and Snare as written in each bar, the 1-bar tracks repeated under them.
+  const PPQ=960, BAR1=4*PPQ, BAR=BARS*BAR1, spb=60/state.bpm;
+  const ev=[...Array(BARS).keys()].flatMap(b=>barEvents(b).list.filter(e=>!muted[e.lane]).map(e=>({
+    at:b*BAR1+Math.min(BAR1-1,Math.round(e.t/spb*PPQ)), note:GM[e.lane],
+    vel:Math.max(1,Math.min(127,Math.round(115*(e.roll?0.75:e.lvl??(e.k%4===0?1:e.k%2===0?0.8:0.6)))))})));
   const msgs=[];
   for(const e of ev){ // note length: up to a 32nd, ending before the same note plays again
     const next=ev.filter(x=>x.note===e.note&&x.at>e.at).reduce((m,x)=>Math.min(m,x.at),BAR);

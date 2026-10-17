@@ -16,7 +16,8 @@ Pick a Timing, turn the knob and press Play. Audio starts on your first click, b
 ## What's on the page
 
 - **Timing, Feel and the 0 to 6 knob**, laid out like the module.
-- **One bar on six tracks** in the module's order: Kick, Snare, Hihat 1, Hihat 2, Perc 1, Perc 2. Click or drag to write your own beat; it's saved in your browser.
+- **Six tracks** in the module's order: Kick, Snare, Hihat 1, Hihat 2, Perc 1, Perc 2. Click or drag to write your own beat; it's saved in your browser.
+- **Four bars, like the module.** Kick and Snare run 4 bars (64 steps). The hats and percs loop 1 bar (16 steps) under them. See [Four bars](#four-bars).
 - **15 preset beats**, including busier ones with both Perc tracks working (Afrobeat, Samba, Jungle, Dembow).
 - **Hear straight**, to compare any setting with straight 16ths.
 - **808, 909 and 606 kits**, synthesised in the browser.
@@ -85,6 +86,17 @@ The two versions are within a few ms of each other (HOPP 4.6 ms, DEEP 8.2 ms at 
 | Late | Kick straight, Snare one tick late | Proposed |
 | Stut | Trap-style Hihat 1 ratchets where producers usually put them | Proposed |
 
+## Four bars
+
+The manual's Pattern Edit lengths: Kick and Snare are 4 x 16 = 64 steps, Hihat 1, Hihat 2, Perc 1 and Perc 2 are 16 steps.
+
+- **Bar tabs 1 to 4** pick which bar the grid shows and edits. Each tab has a mini map of that bar's Kick (top row) and Snare (bottom row).
+- **Follow** keeps the grid on the bar that's playing. Pick a tab while playing to stay on that bar and edit it while the loop runs.
+- In bars 2 to 4 the hats and percs are dimmed and labelled *1-bar loop*: they're bar 1 repeating, so editing them there edits the one bar they share.
+- **Copy bar N to all** copies the shown bar's Kick and Snare into the other three.
+- Play always starts from bar 1. Linear, Slop, Rolls and Stut work bar by bar, since they depend on that bar's Kick and Snare.
+- The presets repeat one bar of Kick and Snare four times. Beats saved before this change load the same way.
+
 ## Linear
 
 From the module, next to the grid. When tracks clash on a step only the highest priority one plays: Snare beats Kick, both beat the hats and percs, open hat beats closed, Perc 2 beats Perc 1. Hats and percs don't silence each other. Silenced hits show as dashed outlines.
@@ -102,7 +114,7 @@ It's disabled for the four factory Timings. No firmware, addresses or patching s
 
 ## Download MIDI
 
-The **Download MIDI** button above the grid saves the bar exactly as it plays: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's one bar of GM drums on channel 10 (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat, so hits are placed to within 1/960 of a beat. The file name says what it is, e.g. `stolperbeats-Boom-bap-SQEZ-5-Tight-90-bpm.mid`.
+The **Download MIDI** button above the grid saves all 4 bars exactly as they play: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums on channel 10 (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat, so hits are placed to within 1/960 of a beat. The file name says what it is, e.g. `stolperbeats-Boom-bap-SQEZ-5-Tight-90-bpm.mid`.
 
 ## Creator
 
