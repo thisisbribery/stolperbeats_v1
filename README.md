@@ -104,11 +104,11 @@ The switch above the grid picks what the grid plays.
 - **SKETCH:** the presets and your own beat, as before.
 - **MODULE:** your pattern banks, picked the way the module does it. A **Bank** picker, then one picker per track: **Kick**, **Snare**, **Hihat 1**, **Hihat 2**, **Perc 1** and **Perc 2**, each 1 to 24. Each track picks its own number, so Kick on 3 with Hihat 1 on 17 is normal. Click the arrows, scroll over the number, or focus it and use the arrow keys.
 - In MODULE, edits on the grid go straight into the bank, like Pattern Edit on the module.
-- While playing, a bank or pattern change blinks and lands on the next bar. Stopping applies it at once.
+- Every change lands straight away while playing, like the module: bank and pattern picks, grid edits, Timing, Shuffle, Feel, Linear and tempo. There's no wait for the next bar.
 - Switching back to SKETCH brings back whatever you had there.
 - The page remembers your mode, bank and pattern numbers.
 
-All six tracks pick their pattern separately, as on the hardware. Defaults until checked: Bank changes move every track at once and keep their numbers. Changes made while playing land on the next bar.
+All six tracks pick their pattern separately and changes land straight away, as on the hardware. Default until checked: Bank changes move every track at once and keep their numbers.
 
 ## Pattern banks
 

@@ -275,11 +275,7 @@ main{padding-top:14px}
 .enc .v{min-width:28px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;font-size:14px;border-left:1px solid var(--line);border-right:1px solid var(--line);padding:3px 6px;cursor:ns-resize;outline:none}
 .enc .v:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
 .enc.bank .v{min-width:60px}
-.enc .v.pending{color:var(--accent);animation:pendblink 1s steps(2) infinite}
-@keyframes pendblink{50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){.enc .v.pending{animation:none}}
 .modnote{font-size:12px;color:var(--muted)}
-.modnote.pending{color:var(--accent)}
 /* Pattern banks panel: one row of 24 tiles per encoder */
 .trows{display:flex;flex-direction:column;gap:6px}
 .trow{display:grid;grid-template-columns:46px 1fr;gap:6px;align-items:center}
@@ -290,7 +286,6 @@ main{padding-top:14px}
 .ptile .bg{fill:var(--muted);opacity:.14}
 .ptile .on{fill:var(--text);opacity:.85}
 .ptile[aria-pressed=true]{border-color:var(--text);color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
-.ptile.pending{outline:1.5px dashed var(--accent);outline-offset:1px}
 @media (max-width:760px){ .tiles24{grid-template-columns:repeat(12,minmax(0,1fr))} .trow{grid-template-columns:1fr} }
 .slotbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
 .slotbar .kitlabel{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
@@ -515,7 +510,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
       <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
       <p><b>Four bars.</b> Like the module, Kick and Snare run 4 bars (64 steps) and the hats and percs loop 1 bar (16 steps) under them. The Bar tabs pick which bar the grid shows and edits; each tab has a mini map of its Kick (top) and Snare (bottom). Follow keeps the grid on the bar that's playing; pick a tab while playing to stay on that bar and edit it while the loop runs. In bars 2 to 4 the hats and percs are dimmed because they're bar 1 repeating: editing them there edits the one bar they share. Copy to all copies the shown bar's Kick and Snare into the other three. The presets repeat one bar of Kick and Snare four times.</p>
-      <p><b>SKETCH and MODULE.</b> The switch above the grid picks what it plays. SKETCH is the presets and your own beat. MODULE plays your pattern banks the way the module does: pick a Bank, then a pattern number for each of the six tracks. Each track picks its own number, edits go straight into the bank, and while playing a change lands on the next bar.</p>
+      <p><b>SKETCH and MODULE.</b> The switch above the grid picks what it plays. SKETCH is the presets and your own beat. MODULE plays your pattern banks the way the module does: pick a Bank, then a pattern number for each of the six tracks. Each track picks its own number and edits go straight into the bank.</p>
       <p><b>Pattern banks.</b> Import the PatternBank files from your Stolperbeats SD card, browse each track's 24 patterns, edit them in MODULE mode or send a SKETCH beat into a bank, and download the bank to copy onto the card. You can also start new banks from scratch. Files come out in exactly the module's own format, byte for byte. No banks are included with this page: bring your own from your card.</p>
       <p><b>Download MIDI.</b> The button above the grid saves all 4 bars exactly as they play: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat.</p>
       <p><b>Creator.</b> The CREATOR switch at the top swaps the Timing row for a table maker, with the same grid, kits, Feels and playback. Start from a Timing or from straight, then drag the steps in the half-bar view while it plays. The Shuffle slider picks the level you're editing, and a level you haven't touched yet starts as a copy of the one before. Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. So it can go straight into a test build. Save adds it under MORE, Export saves its 7 rows as a file, and Import loads one back, including a style's JSON from Download tables. Saved Timings stay in this browser only, so export the ones you want to keep.</p>
@@ -739,6 +734,9 @@ function saveCustom(){ try{ localStorage.setItem(STORE,JSON.stringify(custom)); 
 // that bar's 16 steps, the 1-bar tracks always show their one bar. Everything that reads pattern[lane][k]
 // (grid, Linear, Feels, Rolls, Stut, playback) works on whichever bar barCtx points at.
 let data={}, pattern={}, beatIdx=0, edited=false, barCtx=0, viewBar=0;
+// Set by anything that changes what plays (Timing, Shuffle, Feel, Linear, tempo, the grid, MODULE picks). While playing,
+// the scheduler picks it up within one tick and replans the rest of the current bar, so changes land straight away.
+let replanDue=false;
 const muted={};
 const isStep=p=>typeof p==="string"&&/^\d+$/.test(p);
 function windowOf(a){
@@ -980,6 +978,7 @@ function drawRolls(){
 }
 function colorFor(d){ return Math.abs(d)<1e-6?css("on"):(d>0?css("late"):css("early")); }
 function drawBar(){
+  replanDue=true;
   for(const L of LANES){
     L.label.setAttribute("text-decoration",muted[L.key]?"line-through":"none");
     L.label.setAttribute("opacity",muted[L.key]?.45:1);
@@ -1014,6 +1013,7 @@ function drawSlots(){
   for(let j=0;n&&j<=n;j++) el("line",{x1:BX(j/n),x2:BX(j/n),y1:56,y2:64,stroke:css("slot"),"stroke-width":1.5},gSlots);
 }
 function retarget(){
+  replanDue=true;
   target=computeTargets();
   const from=cloneT(shown), t0=performance.now(), dur=260;
   cancelAnimationFrame(anim);
@@ -1290,7 +1290,7 @@ function drawArchive(){
 const det=document.getElementById("detents"), shuffleIn=document.getElementById("shuffle");
 for(let i=0;i<=6;i++){ const s=document.createElement("span"); s.textContent=i; s.addEventListener("click",()=>{ shuffleIn.value=i; state.shuffle=i; update(); }); det.appendChild(s); }
 shuffleIn.addEventListener("input",e=>{ state.shuffle=+e.target.value; update(); });
-document.getElementById("bpm").addEventListener("input",e=>{ state.bpm=+e.target.value; document.getElementById("bpmv").textContent=state.bpm+" bpm"; if(state.timing==="VOODOO") retarget(); drawHalf(); readout(); });
+document.getElementById("bpm").addEventListener("input",e=>{ state.bpm=+e.target.value; replanDue=true; document.getElementById("bpmv").textContent=state.bpm+" bpm"; if(state.timing==="VOODOO") retarget(); drawHalf(); readout(); });
 document.getElementById("ab").addEventListener("click",e=>{
   state.straight=!state.straight; e.currentTarget.setAttribute("aria-pressed",String(state.straight));
   document.getElementById("knob").classList.toggle("bypassed",state.straight);
@@ -1420,13 +1420,13 @@ function parseBank(text){
 }
 
 // The module picks patterns per encoder: Kick, Snare, Hihat 1+2 and Perc 1+2. Each picks its own number (1 to 24)
-// from the bank, so Kick on 3 and Hihat 1 on 17 is normal. All six tracks pick separately (confirmed on hardware).
-// Our defaults, until checked: Bank changes move every track at once and keep their numbers; changes made while
-// playing land on the next bar.
+// from the bank, so Kick on 3 and Hihat 1 on 17 is normal. All six tracks pick separately, and changes land straight
+// away, like the module (both confirmed on hardware). Our default, until checked: Bank changes move every track at
+// once and keep their numbers.
 const GROUPS=[{g:"K",name:"Kick",lanes:["BD"]},{g:"S",name:"Snare",lanes:["SD"]},{g:"H1",name:"Hihat 1",lanes:["H1"]},{g:"H2",name:"Hihat 2",lanes:["H2"]},{g:"P1",name:"Perc 1",lanes:["P1"]},{g:"P2",name:"Perc 2",lanes:["P2"]}];
 const groupOf=Object.fromEntries(GROUPS.flatMap(G=>G.lanes.map(l=>[l,G.g])));
 // Banks are kept in this browser in their own file format, keyed by file number (0 = Bank 1).
-let banks=new Map(), selBank=null, modSel={K:0,S:0,H1:0,H2:0,P1:0,P2:0}, modPending=null, srcMode="sketch", sketch=null, undoSend=null;
+let banks=new Map(), selBank=null, modSel={K:0,S:0,H1:0,H2:0,P1:0,P2:0}, srcMode="sketch", sketch=null, undoSend=null;
 const trackPick=Object.fromEntries(LANES.map(L=>[L.key,true]));
 try{ const s=JSON.parse(localStorage.getItem(BANK_STORE))||{};
   for(const [n,txt] of Object.entries(s.banks||{})){ const k=+n; if(Number.isInteger(k)&&k>=0&&k<MAX_BANKS) try{ banks.set(k,parseBank(txt).bank); }catch(e){} }
@@ -1449,7 +1449,7 @@ const firstFree=()=>{ for(let n=0;n<MAX_BANKS;n++) if(!banks.has(n)) return n; r
 const sortedBanks=()=>[...banks.keys()].sort((a,b)=>a-b);
 const picked=()=>LANES.filter(L=>trackPick[L.key]).map(L=>L.key);
 const laneName=k=>LANES.find(L=>L.key===k).name;
-const shown2=()=>modPending||{bank:selBank,...modSel}; // what the pickers show: the pending choice, if any
+const shown2=()=>({bank:selBank,...modSel}); // the current choice, as one object
 const selList=()=>GROUPS.map(G=>`${G.name} ${modSel[G.g]+1}`).join(", ");
 function modName(){ return `Bank ${selBank+1}: ${selList()}`; }
 
@@ -1460,7 +1460,6 @@ function bankEdited(){ saveBanks(); drawBanks(); } // a grid edit in MODULE mode
 function setSource(m){
   if(m==="module"&&!banks.size){ srcMode="sketch"; drawModule(); openBanks(); bankMsg("Import your PatternBank files or start a new bank, then switch to MODULE.",true); return; }
   if(m===srcMode) return;
-  modPending=null;
   if(m==="module"){
     sketch={idx:beatIdx,data,edited}; srcMode="module"; beatIdx=MODSRC; edited=false;
     if(!banks.has(selBank)) selBank=sortedBanks()[0];
@@ -1472,26 +1471,21 @@ function setSource(m){
   }
   saveBanks(); refreshGrid(); drawModule(); drawBanks();
 }
-// Apply a bank + pattern choice now. While playing in MODULE mode, selectMod queues it for the next bar instead.
+// Apply a bank + pattern choice. Straight away, even while playing: the scheduler replans the rest of the bar.
 function applySel(sel){
-  selBank=sel.bank; modSel=Object.fromEntries(GROUPS.map(G=>[G.g,sel[G.g]])); modPending=null;
+  selBank=sel.bank; modSel=Object.fromEntries(GROUPS.map(G=>[G.g,sel[G.g]]));
   if(srcMode==="module") bindModule();
   saveBanks(); if(srcMode==="module") refreshGrid(); drawModule(); drawBanks();
 }
 function selectMod(change){
   if(selBank===null) return;
-  const next={...shown2(),...change};
-  if(playing&&srcMode==="module"){
-    const same=next.bank===selBank&&GROUPS.every(G=>next[G.g]===modSel[G.g]);
-    modPending=same?null:next; drawModule(); drawBanks();
-  } else applySel(next);
+  applySel({...shown2(),...change});
 }
 function stepBank(d){ const list=sortedBanks(); if(!list.length) return; const i=list.indexOf(shown2().bank); selectMod({bank:list[(i+d+list.length)%list.length]}); }
 function stepGroup(g,d){ selectMod({[g]:(shown2()[g]+d+PTNS)%PTNS}); }
 // Can only fix up a selection that points at a bank that's gone (removed, renumbered, replaced on import).
 function syncModule(){
   if(selBank!==null&&!banks.has(selBank)) selBank=banks.size?sortedBanks()[0]:null;
-  if(modPending&&!banks.has(modPending.bank)) modPending=null;
   if(srcMode==="module"){ if(selBank===null){ srcMode="module"; setSource("sketch"); return; } bindModule(); refreshGrid(); }
   saveBanks(); drawModule(); drawBanks();
 }
@@ -1524,13 +1518,12 @@ function drawModule(){
   const has=selBank!==null&&banks.has(selBank);
   stripBody.style.display=has?"contents":"none"; stripEmpty.style.display=has?"none":"";
   if(!has) return;
-  const sh=shown2(), pend=!!modPending;
-  encs.bank.textContent=`Bank ${sh.bank+1}`; encs.bank.classList.toggle("pending",pend&&sh.bank!==selBank);
+  const sh=shown2();
+  encs.bank.textContent=`Bank ${sh.bank+1}`;
   encs.bank.title=bankFile(sh.bank);
-  for(const G of GROUPS){ const v=encs[G.g]; v.textContent=String(sh[G.g]+1).padStart(2,"0"); v.classList.toggle("pending",pend&&(sh[G.g]!==modSel[G.g]||sh.bank!==selBank));
+  for(const G of GROUPS){ const v=encs[G.g]; v.textContent=String(sh[G.g]+1).padStart(2,"0");
     v.title=`${G.name}: pattern ${sh[G.g]+1} (PTN${sh[G.g]} in the file)${G.lanes.length>1?`, ${G.lanes.map(laneName).join(" and ")} together`:""}`; }
-  modNote.textContent=pend?"Changes land on the next bar":"Edits on the grid save into the bank";
-  modNote.classList.toggle("pending",pend);
+  modNote.textContent="Edits on the grid save into the bank";
 }
 document.querySelectorAll("#srcSeg button").forEach(b=>b.addEventListener("click",()=>setSource(b.dataset.src)));
 
@@ -1574,7 +1567,7 @@ function drawBanks(){
     const sel=document.createElement("select"); sel.setAttribute("aria-label","Bank number for this file");
     for(let n=0;n<MAX_BANKS;n++){ const o=document.createElement("option"); o.value=n; o.textContent=`${bankFile(n)} (Bank ${n+1})`; o.disabled=banks.has(n)&&n!==selBank; o.selected=n===selBank; sel.appendChild(o); }
     sel.addEventListener("change",()=>{ const to=+sel.value; banks.set(to,banks.get(selBank)); banks.delete(selBank);
-      selBank=to; modPending=null; syncModule(); drawBeats(); bankMsg(`Now saves as ${bankFile(to)}.`); });
+      selBank=to; syncModule(); drawBeats(); bankMsg(`Now saves as ${bankFile(to)}.`); });
     tabs.appendChild(sel);
     const rm=document.createElement("button"); rm.className="clear"; rm.type="button"; rm.textContent="Remove";
     rm.addEventListener("click",()=>{ if(!confirm(`Remove Bank ${selBank+1} from this browser? Download it first if you want to keep it.`)) return;
@@ -1590,7 +1583,6 @@ function drawBanks(){
     for(const G of GROUPS) tileRows[G.g].forEach((t,p)=>{
       const d=tilePath(G,b,p); t.path.setAttribute("d",d);
       t.setAttribute("aria-pressed",String(p===modSel[G.g]));
-      t.classList.toggle("pending",!!modPending&&p===sh[G.g]&&(p!==modSel[G.g]||sh.bank!==selBank));
       t.setAttribute("aria-label",`${G.name} pattern ${p+1}${d?"":", empty"}`); t.title=`${G.name} pattern ${p+1} (PTN${p} in the file)`;
     });
     document.getElementById("sendSketch").textContent=`Send sketch to Bank ${selBank+1}`;
@@ -1654,7 +1646,7 @@ document.getElementById("bankZip").addEventListener("click",()=>{
 // Opened in MODULE mode last time: start there. Drawing waits for the page's first full draw below.
 if(srcMode==="module"){ sketch=null; beatIdx=MODSRC; bindModule(); target=computeTargets(); shown=cloneT(target); }
 
-// ---------- audio: exact step times on the audio clock; changes apply from the next bar ----------
+// ---------- audio: exact step times on the audio clock; changes land straight away (see replan) ----------
 let ctx=null, OUT=null, noiseBuf=null, playing=false, timer=null, raf=null, cur=null, evI=0, bars=[], openHat=null;
 function ensureAudio(){
   if(!ctx){
@@ -1730,18 +1722,31 @@ function barEvents(b=viewBar){ return atBar(b,()=>{
   for(const r of stutTicks()) list.push({t:r.t/N*spb,lane:"H1",k:r.k,lvl:r.lvl});
   list.sort((a,b)=>a.t-b.t); return {list,dur:4*spb,bar:b};
 }); }
+const LOOK=0.1; // seconds scheduled ahead of the audio clock
+let schedTo=0;   // everything up to this time is already scheduled
 function schedule(){
+  if(replanDue){ replanDue=false; replan(); }
+  const horizon=ctx.currentTime+LOOK;
   for(;;){
     if(evI>=cur.list.length){
       const last=bars[bars.length-1], next=last.start+last.dur;
-      if(next>ctx.currentTime+0.12) break;
-      if(modPending) applySel(modPending); // MODULE: a bank or pattern change lands on the next bar
+      if(next>horizon) break;
       cur=barEvents((last.bar+1)%BARS); evI=0; bars.push({start:next,dur:cur.dur,bar:cur.bar}); if(bars.length>4) bars.shift(); continue;
     }
     const e=cur.list[evI], t=bars[bars.length-1].start+e.t;
-    if(t>ctx.currentTime+0.12) break;
+    if(t>horizon) break;
     if(!muted[e.lane]) voice(e.lane,t,e.k,e.roll,e.lvl); evI++;
   }
+  schedTo=Math.max(schedTo,horizon);
+}
+// Rebuild the bar being scheduled from the current settings and carry on from where scheduling got to. Hits already
+// handed to the audio clock (at most LOOK seconds ahead) play as they were; everything after uses the new settings.
+// A tempo change keeps the playhead's place in the bar.
+function replan(){
+  const b=bars[bars.length-1], now=ctx.currentTime, dur=4*60/state.bpm;
+  if(Math.abs(dur-b.dur)>1e-9){ if(now>b.start) b.start=now-(now-b.start)/b.dur*dur; b.dur=dur; }
+  cur=barEvents(b.bar);
+  evI=cur.list.findIndex(e=>b.start+e.t>schedTo+1e-6); if(evI<0) evI=cur.list.length;
 }
 function frame(){
   const now=ctx.currentTime, b=[...bars].reverse().find(x=>x.start<=now);
@@ -1755,10 +1760,10 @@ function setPlay(on){
   const btn=document.getElementById("play");
   if(on){
     ensureAudio();
-    cur=barEvents(0); evI=0; bars=[{start:ctx.currentTime+0.1,dur:cur.dur,bar:0}]; // always from the top of bar 1
+    cur=barEvents(0); evI=0; schedTo=0; replanDue=false; bars=[{start:ctx.currentTime+0.1,dur:cur.dur,bar:0}]; // always from the top of bar 1
     timer=setInterval(schedule,20); schedule(); raf=requestAnimationFrame(frame);
     bar.playhead.setAttribute("visibility","visible");
-  } else { clearInterval(timer); cancelAnimationFrame(raf); bar.playhead.setAttribute("visibility","hidden"); playBar=-1; drawBarTabs(); if(modPending) applySel(modPending); }
+  } else { clearInterval(timer); cancelAnimationFrame(raf); bar.playhead.setAttribute("visibility","hidden"); playBar=-1; drawBarTabs(); }
   playing=on; btn.setAttribute("aria-pressed",String(on));
   btn.querySelector("span").textContent=on?"Stop":"Play";
   document.getElementById("playIcon").setAttribute("d",on?"M2 2h6v6H2z":"M2 1l7 4-7 4z");
