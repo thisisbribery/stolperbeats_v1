@@ -102,13 +102,13 @@ The manual's Pattern Edit lengths: Kick and Snare are 4 x 16 = 64 steps, Hihat 1
 The switch above the grid picks what the grid plays.
 
 - **SKETCH:** the presets and your own beat, as before.
-- **MODULE:** your pattern banks, picked the way the module does it. A **Bank** picker, then one picker per encoder: **Kick**, **Snare**, **Hats** and **Percs**, each 1 to 24. Each track picks its own number, so Kick on 3 with Hats on 17 is normal. Click the arrows, scroll over the number, or focus it and use the arrow keys.
+- **MODULE:** your pattern banks, picked the way the module does it. A **Bank** picker, then one picker per track: **Kick**, **Snare**, **Hihat 1**, **Hihat 2**, **Perc 1** and **Perc 2**, each 1 to 24. Each track picks its own number, so Kick on 3 with Hihat 1 on 17 is normal. Click the arrows, scroll over the number, or focus it and use the arrow keys.
 - In MODULE, edits on the grid go straight into the bank, like Pattern Edit on the module.
 - While playing, a bank or pattern change blinks and lands on the next bar. Stopping applies it at once.
 - Switching back to SKETCH brings back whatever you had there.
 - The page remembers your mode, bank and pattern numbers.
 
-Defaults until checked on hardware: Hihat 1 and 2 share a pattern number, as do Perc 1 and 2. Bank changes move every track at once and keep their numbers. Changes made while playing land on the next bar.
+All six tracks pick their pattern separately, as on the hardware. Defaults until checked: Bank changes move every track at once and keep their numbers. Changes made while playing land on the next bar.
 
 ## Pattern banks
 
@@ -116,7 +116,7 @@ Program the module's pattern banks here and load them through its SD card. The *
 
 - **Import from SD** opens one or more `PatternBankNNN.txt` files. `PatternBank000.txt` is Bank 1. The bank number comes from the file name.
 - **Bank chips** pick the bank. **File** renumbers it, **Remove** drops it from the browser.
-- **Four rows of 24 tiles**, one row per encoder: Kick and Snare (each tile maps all 4 bars), Hats (Hihat 1 over Hihat 2) and Percs (Perc 1 over Perc 2). Click a tile to put that track on that pattern, same as the MODULE pickers.
+- **Six rows of 24 tiles**, one row per track: Kick and Snare (each tile maps all 4 bars), then Hihat 1, Hihat 2, Perc 1 and Perc 2. Click a tile to put that track on that pattern, same as the MODULE pickers.
 - **Send sketch to bank** (SKETCH mode) writes the beat on the grid into the bank at the numbers the rows show. **Tracks** picks which tracks it writes, so you can send just a new Kick. **Undo** reverses it.
 - **New bank** starts an empty one on the first free number.
 - **Download bank** saves the selected bank's file. **Download all** zips every bank.

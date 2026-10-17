@@ -263,18 +263,18 @@ main{padding-top:14px}
 /* SKETCH | MODULE switch, and the MODULE strip: Bank plus one encoder per track group, like the module's panel */
 .srcseg button{letter-spacing:.06em;font-size:11.5px!important}
 .srcseg button[data-src=module][aria-pressed=true]{background:var(--accent);color:#fff}
-.modstrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;margin:2px 0 8px;min-height:34px}
+.modstrip{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:2px 0 8px;min-height:34px}
 .modstrip[hidden]{display:none}
 .pickers[hidden]{display:none}
 .slotbar[hidden],.trows[hidden],.bankrow[hidden]{display:none}
-.encw{display:flex;align-items:center;gap:6px}
+.encw{display:flex;align-items:center;gap:5px}
 .encw .kitlabel{font-size:12px;color:var(--muted);font-weight:600}
 .enc{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.enc button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:11px;padding:4px 8px;cursor:pointer}
+.enc button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:10px;padding:4px 6px;cursor:pointer}
 .enc button:hover{color:var(--text);background:var(--chip)}
-.enc .v{min-width:30px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;font-size:14px;border-left:1px solid var(--line);border-right:1px solid var(--line);padding:3px 6px;cursor:ns-resize;outline:none}
+.enc .v{min-width:28px;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;font-size:14px;border-left:1px solid var(--line);border-right:1px solid var(--line);padding:3px 6px;cursor:ns-resize;outline:none}
 .enc .v:focus-visible{box-shadow:inset 0 0 0 2px var(--accent)}
-.enc.bank .v{min-width:66px}
+.enc.bank .v{min-width:60px}
 .enc .v.pending{color:var(--accent);animation:pendblink 1s steps(2) infinite}
 @keyframes pendblink{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.enc .v.pending{animation:none}}
@@ -481,7 +481,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <button class="clear" id="sendUndo" hidden>Undo</button>
     </div>
     <p class="row-desc" id="bankMsg"></p>
-    <p class="hint">Each row is one encoder on the module: Kick and Snare (4 bars each), Hats (Hihat 1 and 2 share a number) and Percs (Perc 1 and 2 share a number). Click a tile to put that track on that pattern; it's the same as turning the encoder in the MODULE strip above the grid. In MODULE mode, edits on the grid go straight into the bank. In SKETCH mode, Send sketch writes the beat on the grid into this bank at the numbers the rows show.</p>
+    <p class="hint">One row per track, each picking its own pattern: Kick and Snare (4 bars each), Hihat 1, Hihat 2, Perc 1 and Perc 2 (1 bar each). Click a tile to put that track on that pattern; it's the same as turning its picker in the MODULE strip above the grid. In MODULE mode, edits on the grid go straight into the bank. In SKETCH mode, Send sketch writes the beat on the grid into this bank at the numbers the rows show.</p>
     <details class="sdhelp">
       <summary>Getting banks onto the module</summary>
       <ol>
@@ -515,8 +515,8 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
       <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
       <p><b>Four bars.</b> Like the module, Kick and Snare run 4 bars (64 steps) and the hats and percs loop 1 bar (16 steps) under them. The Bar tabs pick which bar the grid shows and edits; each tab has a mini map of its Kick (top) and Snare (bottom). Follow keeps the grid on the bar that's playing; pick a tab while playing to stay on that bar and edit it while the loop runs. In bars 2 to 4 the hats and percs are dimmed because they're bar 1 repeating: editing them there edits the one bar they share. Copy to all copies the shown bar's Kick and Snare into the other three. The presets repeat one bar of Kick and Snare four times.</p>
-      <p><b>SKETCH and MODULE.</b> The switch above the grid picks what it plays. SKETCH is the presets and your own beat. MODULE plays your pattern banks the way the module does: pick a Bank, then a pattern number for each encoder (Kick, Snare, Hats, Percs). Each track picks its own number, edits go straight into the bank, and while playing a change lands on the next bar. Hihat 1 and 2 share a number, as do Perc 1 and 2.</p>
-      <p><b>Pattern banks.</b> Import the PatternBank files from your Stolperbeats SD card, browse each encoder's 24 patterns, edit them in MODULE mode or send a SKETCH beat into a bank, and download the bank to copy onto the card. You can also start new banks from scratch. Files come out in exactly the module's own format, byte for byte. No banks are included with this page: bring your own from your card.</p>
+      <p><b>SKETCH and MODULE.</b> The switch above the grid picks what it plays. SKETCH is the presets and your own beat. MODULE plays your pattern banks the way the module does: pick a Bank, then a pattern number for each of the six tracks. Each track picks its own number, edits go straight into the bank, and while playing a change lands on the next bar.</p>
+      <p><b>Pattern banks.</b> Import the PatternBank files from your Stolperbeats SD card, browse each track's 24 patterns, edit them in MODULE mode or send a SKETCH beat into a bank, and download the bank to copy onto the card. You can also start new banks from scratch. Files come out in exactly the module's own format, byte for byte. No banks are included with this page: bring your own from your card.</p>
       <p><b>Download MIDI.</b> The button above the grid saves all 4 bars exactly as they play: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat.</p>
       <p><b>Creator.</b> The CREATOR switch at the top swaps the Timing row for a table maker, with the same grid, kits, Feels and playback. Start from a Timing or from straight, then drag the steps in the half-bar view while it plays. The Shuffle slider picks the level you're editing, and a level you haven't touched yet starts as a copy of the one before. Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. So it can go straight into a test build. Save adds it under MORE, Export saves its 7 rows as a file, and Import loads one back, including a style's JSON from Download tables. Saved Timings stay in this browser only, so export the ones you want to keep.</p>
       <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
@@ -1420,18 +1420,19 @@ function parseBank(text){
 }
 
 // The module picks patterns per encoder: Kick, Snare, Hihat 1+2 and Perc 1+2. Each picks its own number (1 to 24)
-// from the bank, so Kick on 3 and Hats on 17 is normal. Our defaults, until checked on hardware: Hihat 1 and 2 share a
-// number, as do Perc 1 and 2; Bank changes move every track at once and keep their numbers; changes made while
+// from the bank, so Kick on 3 and Hihat 1 on 17 is normal. All six tracks pick separately (confirmed on hardware).
+// Our defaults, until checked: Bank changes move every track at once and keep their numbers; changes made while
 // playing land on the next bar.
-const GROUPS=[{g:"K",name:"Kick",lanes:["BD"]},{g:"S",name:"Snare",lanes:["SD"]},{g:"H",name:"Hats",lanes:["H1","H2"]},{g:"P",name:"Percs",lanes:["P1","P2"]}];
+const GROUPS=[{g:"K",name:"Kick",lanes:["BD"]},{g:"S",name:"Snare",lanes:["SD"]},{g:"H1",name:"Hihat 1",lanes:["H1"]},{g:"H2",name:"Hihat 2",lanes:["H2"]},{g:"P1",name:"Perc 1",lanes:["P1"]},{g:"P2",name:"Perc 2",lanes:["P2"]}];
 const groupOf=Object.fromEntries(GROUPS.flatMap(G=>G.lanes.map(l=>[l,G.g])));
 // Banks are kept in this browser in their own file format, keyed by file number (0 = Bank 1).
-let banks=new Map(), selBank=null, modSel={K:0,S:0,H:0,P:0}, modPending=null, srcMode="sketch", sketch=null, undoSend=null;
+let banks=new Map(), selBank=null, modSel={K:0,S:0,H1:0,H2:0,P1:0,P2:0}, modPending=null, srcMode="sketch", sketch=null, undoSend=null;
 const trackPick=Object.fromEntries(LANES.map(L=>[L.key,true]));
 try{ const s=JSON.parse(localStorage.getItem(BANK_STORE))||{};
   for(const [n,txt] of Object.entries(s.banks||{})){ const k=+n; if(Number.isInteger(k)&&k>=0&&k<MAX_BANKS) try{ banks.set(k,parseBank(txt).bank); }catch(e){} }
   selBank=banks.has(s.sel)?s.sel:banks.size?Math.min(...banks.keys()):null;
-  if(s.ptn) for(const G of GROUPS){ const v=s.ptn[G.g]; if(Number.isInteger(v)&&v>=0&&v<PTNS) modSel[G.g]=v; }
+  if(s.ptn){ const old={H1:"H",H2:"H",P1:"P",P2:"P"}; // saves from when Hihat 1+2 and Perc 1+2 shared a number
+    for(const G of GROUPS){ const v=s.ptn[G.g]??s.ptn[old[G.g]]; if(Number.isInteger(v)&&v>=0&&v<PTNS) modSel[G.g]=v; } }
   if(s.src==="module"&&selBank!==null) srcMode="module";
 }catch(e){}
 function saveBanks(){
@@ -1449,7 +1450,8 @@ const sortedBanks=()=>[...banks.keys()].sort((a,b)=>a-b);
 const picked=()=>LANES.filter(L=>trackPick[L.key]).map(L=>L.key);
 const laneName=k=>LANES.find(L=>L.key===k).name;
 const shown2=()=>modPending||{bank:selBank,...modSel}; // what the pickers show: the pending choice, if any
-function modName(){ return `Bank ${selBank+1}: Kick ${modSel.K+1}, Snare ${modSel.S+1}, Hats ${modSel.H+1}, Percs ${modSel.P+1}`; }
+const selList=()=>GROUPS.map(G=>`${G.name} ${modSel[G.g]+1}`).join(", ");
+function modName(){ return `Bank ${selBank+1}: ${selList()}`; }
 
 // ----- MODULE mode -----
 function bindModule(){ const b=banks.get(selBank); data=Object.fromEntries(LANES.map(L=>[L.key,b[L.key][modSel[groupOf[L.key]]]])); bindPattern(); }
@@ -1472,7 +1474,7 @@ function setSource(m){
 }
 // Apply a bank + pattern choice now. While playing in MODULE mode, selectMod queues it for the next bar instead.
 function applySel(sel){
-  selBank=sel.bank; modSel={K:sel.K,S:sel.S,H:sel.H,P:sel.P}; modPending=null;
+  selBank=sel.bank; modSel=Object.fromEntries(GROUPS.map(G=>[G.g,sel[G.g]])); modPending=null;
   if(srcMode==="module") bindModule();
   saveBanks(); if(srcMode==="module") refreshGrid(); drawModule(); drawBanks();
 }
@@ -1535,8 +1537,8 @@ document.querySelectorAll("#srcSeg button").forEach(b=>b.addEventListener("click
 // ----- Pattern banks panel -----
 const bankCard=document.getElementById("bankCard");
 function openBanks(){ bankCard.open=true; bankCard.scrollIntoView({block:"nearest",behavior:"smooth"}); }
-// One row of 24 tiles per encoder. Each tile's mini map: Kick or Snare across all 4 bars, or the pair of 1-bar tracks
-// (Hihat 1 over Hihat 2, Perc 1 over Perc 2).
+// One row of 24 tiles per track. Each tile's mini map: Kick or Snare across all 4 bars, or a 1-bar track
+// stretched to the same width.
 const tileRows={};
 for(const G of GROUPS){
   const row=document.createElement("div"); row.className="trow";
@@ -1592,7 +1594,7 @@ function drawBanks(){
       t.setAttribute("aria-label",`${G.name} pattern ${p+1}${d?"":", empty"}`); t.title=`${G.name} pattern ${p+1} (PTN${p} in the file)`;
     });
     document.getElementById("sendSketch").textContent=`Send sketch to Bank ${selBank+1}`;
-    document.getElementById("sendSketch").title=`Writes the ticked tracks into Bank ${selBank+1} at Kick ${modSel.K+1}, Snare ${modSel.S+1}, Hats ${modSel.H+1} and Percs ${modSel.P+1}`;
+    document.getElementById("sendSketch").title=`Writes the ticked tracks into Bank ${selBank+1} at ${selList()}`;
   }
   document.querySelectorAll("#slotTracks button").forEach(b=>b.setAttribute("aria-pressed",String(trackPick[b.dataset.k])));
   document.getElementById("sendSketch").disabled=!picked().length;
