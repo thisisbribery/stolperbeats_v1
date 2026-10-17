@@ -97,6 +97,38 @@ The manual's Pattern Edit lengths: Kick and Snare are 4 x 16 = 64 steps, Hihat 1
 - Play always starts from bar 1. Linear, Slop, Rolls and Stut work bar by bar, since they depend on that bar's Kick and Snare.
 - The presets repeat one bar of Kick and Snare four times. Beats saved before this change load the same way.
 
+## Pattern banks
+
+Program the module's pattern banks here and load them through its SD card.
+
+- **Import from SD** opens one or more `PatternBankNNN.txt` files. `PatternBank000.txt` is Bank 1. The bank number comes from the file name.
+- **Bank chips** pick the bank. **File** renumbers it, **Remove** drops it from the browser.
+- **24 pattern tiles**, each with a mini map: Kick and Snare across all 4 bars, then Hihat 1, Hihat 2, Perc 1, Perc 2.
+- **Load into grid** (or double-click a tile) puts the pattern on the grid. Edit it, then **Save grid here** writes it back. **Undo** reverses the last save.
+- **Tracks** picks which tracks Load and Save touch. Pull just the hats from one pattern, or save just a new Kick into another.
+- **New bank** starts an empty one on the first free number.
+- **Download bank** saves the selected bank's file. **Download all** zips every bank.
+- Banks stay in this browser until you remove them. No banks ship with the page.
+
+### File format
+
+Read from the module's own files. Six groups in this order: `KICK`, `SNARE`, `HIHAT1`, `HIHAT2`, `PERC1`, `PERC2`. Each has 24 lines, `PTN0` to `PTN23`:
+
+```
+KICK > PTN0: 1000000000000000, 1000000000000000, 1000000000000000, 1000000000000001;
+HIHAT1 > PTN0: 1000100010001000;
+```
+
+Kick and Snare hold four 16-step bars separated by `, `. The others hold one. `1` is a hit. Windows line endings (CRLF), one blank line between groups, and a line ending after the last line. A full bank is 7462 bytes. The file stores hits only, no accents or velocity. Exports match the module's files byte for byte.
+
+### Getting banks onto the module
+
+1. Press Stop, then power off the rack. The module writes its data to the card when it stops, so never swap files while it's on.
+2. Take out the SD card and back up every file on it.
+3. Copy the downloaded PatternBank files into the same folder as the card's own, replacing any with the same name.
+4. Put the card back and power on.
+5. A bank number the module hasn't used yet starts switched off. Hold either Bank button for 2 seconds, turn the Kick encoder to the bank and click to switch it on.
+
 ## Linear
 
 From the module, next to the grid. When tracks clash on a step only the highest priority one plays: Snare beats Kick, both beat the hats and percs, open hat beats closed, Perc 2 beats Perc 1. Hats and percs don't silence each other. Silenced hits show as dashed outlines.

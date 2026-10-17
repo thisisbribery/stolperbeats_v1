@@ -251,6 +251,39 @@ main{padding-top:14px}
 .follow{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
 .follow input{margin:0;accent-color:var(--accent)}
 .barnote{font-size:12px;color:var(--muted)}
+/* Pattern banks: bank chips, the 24 pattern slots with mini maps, and the load/save bar */
+#bankCard .barhead{margin-bottom:8px}
+.bankrow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px}
+.bchip{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:999px;padding:2px 10px;font:inherit;font-size:12px;cursor:pointer;font-variant-numeric:tabular-nums}
+.bchip[aria-pressed=true]{background:var(--text);border-color:var(--text);color:var(--panel)}
+.bankrow select{font:inherit;font-size:12px;background:var(--chip);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:1px 4px}
+.bankrow .kitlabel{font-size:12px;color:var(--muted);font-weight:600;margin-left:8px}
+.slots{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:5px}
+.slot{position:relative;border:1px solid var(--line);background:transparent;border-radius:7px;padding:3px 4px 4px;cursor:pointer;color:var(--muted);font:inherit;font-size:11px;font-weight:700;text-align:left;min-width:0;font-variant-numeric:tabular-nums}
+.slot svg{display:block;width:100%;height:auto;margin-top:2px}
+.slot .bg{fill:var(--muted);opacity:.14}
+.slot .on{fill:var(--text);opacity:.85}
+.slot[aria-pressed=true]{border-color:var(--text);color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
+.slot.src::after{content:"";position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.slot.empty svg{opacity:.5}
+.slotbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+.slotbar .kitlabel{font-size:12px;color:var(--muted);font-weight:600;margin-left:4px}
+.sbtn{border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:999px;padding:4px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.sbtn:hover:not(:disabled){border-color:var(--text)}
+.sbtn.save{border-color:var(--green);color:var(--green);background:var(--green-soft)}
+.sbtn:disabled{opacity:.4;cursor:not-allowed}
+.trk{display:inline-flex;gap:4px;flex-wrap:wrap}
+.trk button{border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:6px;padding:1px 7px;font:inherit;font-size:12px;cursor:pointer}
+.trk button[aria-pressed=true]{background:var(--chip);color:var(--text);border-color:var(--text)}
+#bankMsg{min-height:1.4em;margin-top:6px}
+#bankMsg.bad{color:var(--orange)}
+.bankempty{color:var(--muted);font-size:13px;padding:14px 0}
+.sdhelp{margin-top:6px;font-size:13px;color:var(--muted)}
+.sdhelp summary{cursor:pointer;color:var(--text);font-weight:600}
+.sdhelp ol{margin:8px 0 6px 18px;padding:0}
+.sdhelp li{margin:3px 0}
+.sdhelp p{margin:4px 0 0}
+@media (max-width:760px){ .slots{grid-template-columns:repeat(6,minmax(0,1fr))} }
 /* VISUALISER | CREATOR switch, and the timing creator, which takes the Timing row's place at the same size */
 .pagehead{grid-template-columns:1fr auto auto;grid-template-areas:"title mode theme" "lede lede lede"}
 .pagehead .modesw{grid-area:mode}
@@ -401,6 +434,40 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
     <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it. Pick a Bar tab to write Kick and Snare in bars 2 to 4.</p>
   </section>
 
+  <section class="card" id="bankCard">
+    <div class="barhead"><h2>Pattern banks</h2><span class="status" id="bankStatus"></span>
+      <div class="barctl">
+        <button class="dl" id="bankImport" title="Open PatternBank files from your Stolperbeats SD card. You can pick several at once.">Import from SD</button>
+        <button class="dl" id="bankNew" title="Start an empty bank on the first free bank number">New bank</button>
+        <button class="dl" id="bankDl" title="Save this bank as its PatternBank file, ready to copy to the SD card">Download bank</button>
+        <button class="dl" id="bankZip" title="Save every bank here as PatternBank files in one zip">Download all</button>
+        <input type="file" id="bankFile" accept=".txt,text/plain" multiple hidden>
+      </div>
+    </div>
+    <div class="bankrow" id="bankTabs" role="group" aria-label="Banks"></div>
+    <div class="slots" id="slots" role="group" aria-label="The bank's 24 patterns"></div>
+    <div class="slotbar" id="slotBar">
+      <b id="slotName">Pattern 1</b>
+      <button class="sbtn" id="slotLoad">Load into grid</button>
+      <button class="sbtn save" id="slotSave">Save grid here</button>
+      <span class="kitlabel">Tracks</span><div class="trk" id="slotTracks" role="group" aria-label="Tracks to load or save"></div>
+      <button class="clear" id="slotUndo" hidden>Undo</button>
+    </div>
+    <p class="row-desc" id="bankMsg"></p>
+    <p class="hint">Each pattern's map, top to bottom: Kick and Snare across all 4 bars, then Hihat 1, Hihat 2, Perc 1 and Perc 2. Click a pattern to pick it, double-click to load it. Tracks sets which tracks Load and Save touch, so you can pull just the hats from one pattern or save just a new Kick.</p>
+    <details class="sdhelp">
+      <summary>Getting banks onto the module</summary>
+      <ol>
+        <li>Press Stop on Stolperbeats, then power off the rack. The module writes its data to the card when it stops, so never swap files while it's on.</li>
+        <li>Take out the SD card and copy every file on it to your computer as a backup.</li>
+        <li>Copy the downloaded PatternBank files into the same folder as the card's own PatternBank files, replacing any with the same name. PatternBank000 is Bank 1, PatternBank004 is Bank 5.</li>
+        <li>Put the card back and power on.</li>
+        <li>A bank number the module hasn't used yet starts switched off. Hold either Bank button for 2 seconds, turn the Kick encoder to the bank and click to switch it on.</li>
+      </ol>
+      <p>Each file holds 24 patterns per track: Kick and Snare 4 bars each, the hats and percs 1 bar. The files store hits only, no accents or velocity. Banks you import or build here are kept in this browser until you remove them.</p>
+    </details>
+  </section>
+
   <section class="card" id="halfCard">
     <div class="halfhead"><h2 id="halfTitle">Half a bar up close: the firmware's 8-step cycle</h2><span class="halfsub">Use this section to shape the grid above: drag the steps and the bar follows.</span></div>
     <div class="scroll"><svg id="beat" viewBox="0 0 1000 150" role="img" aria-label="Half a bar divided into ticks with the eight step positions"></svg></div>
@@ -420,6 +487,7 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       <p><b>Linear.</b> From the module: when tracks clash on a step, only the highest priority one plays.</p>
       <p><b>Download tables.</b> The button by the Timings saves the selected style as a zip: its step positions at 96 ticks per beat (JSON and CSV), Stolperbeats-format rows for HOPP, DEEP, FOLD and CLSTR, and a one-bar MIDI groove per level for Ableton (right-click a clip, Extract Groove(s)). It's off for the four factory Timings. No firmware is included.</p>
       <p><b>Four bars.</b> Like the module, Kick and Snare run 4 bars (64 steps) and the hats and percs loop 1 bar (16 steps) under them. The Bar tabs pick which bar the grid shows and edits; each tab has a mini map of its Kick (top) and Snare (bottom). Follow keeps the grid on the bar that's playing; pick a tab while playing to stay on that bar and edit it while the loop runs. In bars 2 to 4 the hats and percs are dimmed because they're bar 1 repeating: editing them there edits the one bar they share. Copy to all copies the shown bar's Kick and Snare into the other three. The presets repeat one bar of Kick and Snare four times.</p>
+      <p><b>Pattern banks.</b> Import the PatternBank files from your Stolperbeats SD card, pick any of a bank's 24 patterns, load it into the grid, edit it, save it back, and download the bank to copy onto the card. You can also start new banks from scratch. Files come out in exactly the module's own format, byte for byte. No banks are included with this page: bring your own from your card.</p>
       <p><b>Download MIDI.</b> The button above the grid saves all 4 bars exactly as they play: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat.</p>
       <p><b>Creator.</b> The CREATOR switch at the top swaps the Timing row for a table maker, with the same grid, kits, Feels and playback. Start from a Timing or from straight, then drag the steps in the half-bar view while it plays. The Shuffle slider picks the level you're editing, and a level you haven't touched yet starts as a copy of the one before. Every Timing made here keeps to the module's rules: whole ticks, 16 to 36 ticks per beat in steps of 4, every step at least 1 tick, and the half bar's 8 lengths adding up to 2N. So it can go straight into a test build. Save adds it under MORE, Export saves its 7 rows as a file, and Import loads one back, including a style's JSON from Download tables. Saved Timings stay in this browser only, so export the ones you want to keep.</p>
       <p>See Sources below for what's read from firmware, what's matched, and where each idea comes from.</p>
@@ -652,12 +720,18 @@ function windowOf(a){
 }
 function bindPattern(){ pattern={}; for(const L of LANES) pattern[L.key]=windowOf(data[L.key]); }
 function atBar(b,fn){ const was=barCtx; barCtx=b; try{ return fn(); } finally{ barCtx=was; } }
-function loadBeat(i){
+// BANKSLOT: the grid holds a working copy of one pattern from a bank (see Pattern banks). Save writes it back.
+const BANKSLOT=CUSTOM+1;
+let bankSrc=null; // {bank, slot} the grid was loaded from
+function loadBeat(i,from){
   beatIdx=i; edited=false;
   if(i===CUSTOM) data=custom; // edits write straight into the saved slot
+  else if(i===BANKSLOT){ bankSrc={bank:from.bank,slot:from.slot}; data=Object.fromEntries(LANES.map(L=>[L.key,from.lanes[L.key].slice()])); }
   else { data={}; for(const L of LANES) data[L.key]=toArr(BEATS[i][L.key],laneLen(L.key)); }
+  if(i!==BANKSLOT) bankSrc=null;
   bindPattern();
 }
+const beatName=()=>beatIdx===CUSTOM?"your beat":beatIdx===BANKSLOT?`Bank ${bankSrc.bank+1} pattern ${bankSrc.slot+1}`:BEATS[beatIdx].name;
 loadBeat(0);
 const state={timing:"Trip",shuffle:0,bpm:90,straight:false,kit:"808",feel:0,linear:0,mod:true,creator:false}; // the green styles start on MODULE 36
 let cSel=null; // the creator's selected step (0-7) in the half-bar view
@@ -1237,9 +1311,9 @@ function drawKits(){ kWrap.querySelectorAll("button").forEach(b=>b.setAttribute(
 
 const bWrap=document.getElementById("beats"), mineBtn=document.getElementById("mine"), clearBtn=document.getElementById("clear");
 BEATS.forEach((b,i)=>{ const btn=document.createElement("button"); btn.className="bbtn"; btn.innerHTML=`<span class="n">${i+1}</span>${b.name}`;
-  btn.addEventListener("click",()=>{ loadBeat(i); drawBeats(); drawBar(); }); bWrap.appendChild(btn); });
-mineBtn.addEventListener("click",()=>{ loadBeat(CUSTOM); drawBeats(); drawBar(); });
-clearBtn.addEventListener("click",()=>{ for(const L of LANES) custom[L.key].fill(0); saveCustom(); loadBeat(CUSTOM); drawBeats(); drawBar(); });
+  btn.addEventListener("click",()=>{ loadBeat(i); drawBeats(); drawBar(); drawBanks(); }); bWrap.appendChild(btn); });
+mineBtn.addEventListener("click",()=>{ loadBeat(CUSTOM); drawBeats(); drawBar(); drawBanks(); });
+clearBtn.addEventListener("click",()=>{ for(const L of LANES) custom[L.key].fill(0); saveCustom(); loadBeat(CUSTOM); drawBeats(); drawBar(); drawBanks(); });
 function drawBeats(){
   bWrap.querySelectorAll(".bbtn").forEach((b,i)=>b.setAttribute("aria-pressed",String(i===beatIdx)));
   mineBtn.setAttribute("aria-pressed",String(beatIdx===CUSTOM));
@@ -1247,6 +1321,7 @@ function drawBeats(){
   const count=LANES.reduce((n,L)=>n+custom[L.key].reduce((a,b)=>a+b,0),0);
   document.getElementById("status").textContent=beatIdx===CUSTOM
     ? (count?`· your beat, ${count} hit${count>1?"s":""}, saved in this browser`:"· your beat is empty. Click or drag on the grid to add hits")
+    : beatIdx===BANKSLOT?`· ${beatName()}${edited?" (edited, not saved to the bank yet)":""}`
     : `· ${BEATS[beatIdx].name}${edited?" (edited)":""}`;
 }
 
@@ -1283,6 +1358,172 @@ document.getElementById("copyBar").addEventListener("click",()=>{
   drawBeats(); drawBar();
 });
 followIn.addEventListener("change",()=>{ if(followIn.checked&&playBar>=0) setViewBar(playBar); });
+
+// ---------- Pattern banks: the module's PatternBankNNN.txt files on its SD card ----------
+// Format, read from the module's own files: six groups (KICK, SNARE, HIHAT1, HIHAT2, PERC1, PERC2) of 24 lines,
+// "NAME > PTNp: bits;" with p = 0 to 23. Kick and Snare hold four 16-step bars separated by ", ", the others one.
+// 1 is a hit. Windows line endings, one blank line between groups, and a line ending after the last line.
+// PatternBank000.txt is Bank 1. Hits only: no accents or velocity in the file.
+const PTNS=24, MAX_BANKS=64, BANK_STORE="stolperbeats-shuffle-map:banks";
+const FILE_NAME={BD:"KICK",SD:"SNARE",H1:"HIHAT1",H2:"HIHAT2",P1:"PERC1",P2:"PERC2"};
+const pad3=n=>String(n).padStart(3,"0"), bankFile=n=>`PatternBank${pad3(n)}.txt`;
+const emptyBank=()=>Object.fromEntries(LANES.map(L=>[L.key,Array.from({length:PTNS},()=>Array(laneLen(L.key)).fill(0))]));
+function writeBank(bank){
+  return LANES.map(L=>bank[L.key].map((a,p)=>{
+    const bars=[]; for(let i=0;i<a.length;i+=16) bars.push(a.slice(i,i+16).join(""));
+    return `${FILE_NAME[L.key]} > PTN${p}: ${bars.join(", ")};`;
+  }).join("\r\n")).join("\r\n\r\n")+"\r\n";
+}
+function parseBank(text){
+  const bank=emptyBank(), got=new Set(), problems=[];
+  const keyOf=Object.fromEntries(Object.entries(FILE_NAME).map(([k,v])=>[v,k]));
+  text.split(/\r?\n/).forEach((raw,i)=>{
+    const line=raw.trim(); if(!line) return;
+    const m=line.match(/^([A-Z0-9]+)\s*>\s*PTN(\d+)\s*:\s*([01,\s]*?)\s*;?$/i), key=m&&keyOf[m[1].toUpperCase()];
+    if(!key){ problems.push(`line ${i+1} isn't a pattern line`); return; }
+    const p=+m[2], bars=m[3].split(",").map(s=>s.trim()), want=laneLen(key)/16;
+    if(p>=PTNS){ problems.push(`line ${i+1}: PTN${p} is past PTN${PTNS-1}`); return; }
+    if(bars.length!==want||bars.some(b=>!/^[01]{16}$/.test(b))){ problems.push(`line ${i+1}: ${FILE_NAME[key]} PTN${p} needs ${want} block${want>1?"s":""} of 16 ones and zeros`); return; }
+    bank[key][p]=bars.join("").split("").map(Number); got.add(key+p);
+  });
+  const missing=LANES.length*PTNS-got.size;
+  if(!got.size) throw new Error("no patterns found");
+  if(missing) problems.push(`${missing} pattern${missing>1?"s":""} missing, left empty`);
+  return {bank,problems};
+}
+// Banks are kept in this browser in their own file format, keyed by file number (0 = Bank 1).
+let banks=new Map(), selBank=null, selSlot=0, undoSave=null;
+const trackPick=Object.fromEntries(LANES.map(L=>[L.key,true]));
+try{ const s=JSON.parse(localStorage.getItem(BANK_STORE))||{};
+  for(const [n,txt] of Object.entries(s.banks||{})){ const k=+n; if(Number.isInteger(k)&&k>=0&&k<MAX_BANKS) try{ banks.set(k,parseBank(txt).bank); }catch(e){} }
+  selBank=banks.has(s.sel)?s.sel:banks.size?Math.min(...banks.keys()):null;
+}catch(e){}
+function saveBanks(){
+  try{ localStorage.setItem(BANK_STORE,JSON.stringify({sel:selBank,banks:Object.fromEntries([...banks].map(([n,b])=>[n,writeBank(b)]))})); return true; }
+  catch(e){ bankMsg("Couldn't save banks in this browser (storage full?). Download them to keep them.",true); return false; }
+}
+const bankMsgEl=document.getElementById("bankMsg");
+function bankMsg(text,bad){ bankMsgEl.textContent=text||""; bankMsgEl.className="row-desc"+(bad?" bad":""); }
+function download(name,blob){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+const firstFree=()=>{ for(let n=0;n<MAX_BANKS;n++) if(!banks.has(n)) return n; return null; };
+const picked=()=>LANES.filter(L=>trackPick[L.key]).map(L=>L.key);
+const slotLanes=(n,p)=>Object.fromEntries(LANES.map(L=>[L.key,banks.get(n)[L.key][p]]));
+
+// Mini map per slot: Kick and Snare across all 4 bars (1 unit per step), the 1-bar tracks stretched to the same width.
+const slotEls=[...Array(PTNS).keys()].map(p=>{
+  const b=document.createElement("button"); b.className="slot"; b.type="button";
+  b.innerHTML=`<span>${p+1}</span><svg viewBox="0 0 64 23" preserveAspectRatio="none" aria-hidden="true"><rect class="bg" x="0" y="0" width="64" height="23"/><path class="on"/></svg>`;
+  b.path=b.querySelector("path.on");
+  b.addEventListener("click",()=>{ selSlot=p; undoSave=null; bankMsg(""); drawBanks(); });
+  b.addEventListener("dblclick",()=>{ selSlot=p; loadSlot(); });
+  document.getElementById("slots").appendChild(b); return b;
+});
+function slotPath(lanes){
+  let d=""; LANES.forEach((L,r)=>{ const a=lanes[L.key], w=64/a.length, y=r*4;
+    a.forEach((v,i)=>{ if(v) d+=`M${i*w} ${y}h${Math.max(w-.3,.7)}v3h-${Math.max(w-.3,.7)}z`; }); });
+  return d;
+}
+function drawBanks(){
+  const has=selBank!==null&&banks.has(selBank);
+  const tabs=document.getElementById("bankTabs"); tabs.innerHTML="";
+  [...banks.keys()].sort((a,b)=>a-b).forEach(n=>{
+    const c=document.createElement("button"); c.className="bchip"; c.type="button"; c.textContent=`Bank ${n+1}`;
+    c.title=bankFile(n); c.setAttribute("aria-pressed",String(n===selBank));
+    c.addEventListener("click",()=>{ selBank=n; undoSave=null; bankMsg(""); saveBanks(); drawBanks(); });
+    tabs.appendChild(c);
+  });
+  if(has){ // renumber, and remove
+    const lab=document.createElement("span"); lab.className="kitlabel"; lab.textContent="File"; tabs.appendChild(lab);
+    const sel=document.createElement("select"); sel.setAttribute("aria-label","Bank number for this file");
+    for(let n=0;n<MAX_BANKS;n++){ const o=document.createElement("option"); o.value=n; o.textContent=`${bankFile(n)} (Bank ${n+1})`; o.disabled=banks.has(n)&&n!==selBank; o.selected=n===selBank; sel.appendChild(o); }
+    sel.addEventListener("change",()=>{ const to=+sel.value; banks.set(to,banks.get(selBank)); banks.delete(selBank);
+      if(bankSrc&&bankSrc.bank===selBank){ bankSrc.bank=to; drawBeats(); } selBank=to; saveBanks(); drawBanks(); bankMsg(`Now saves as ${bankFile(to)}.`); });
+    tabs.appendChild(sel);
+    const rm=document.createElement("button"); rm.className="clear"; rm.type="button"; rm.textContent="Remove";
+    rm.addEventListener("click",()=>{ if(!confirm(`Remove Bank ${selBank+1} from this browser? Download it first if you want to keep it.`)) return;
+      banks.delete(selBank); selBank=banks.size?Math.min(...banks.keys()):null; undoSave=null; saveBanks(); drawBanks(); bankMsg("Bank removed."); });
+    tabs.appendChild(rm);
+  } else {
+    const e=document.createElement("span"); e.className="bankempty";
+    e.textContent="No banks yet. Import PatternBank files from your SD card, or start a new bank."; tabs.appendChild(e);
+  }
+  document.getElementById("slots").hidden=!has; document.getElementById("slotBar").hidden=!has;
+  slotEls.forEach((b,p)=>{
+    const lanes=has?slotLanes(selBank,p):null, d=has?slotPath(lanes):"";
+    b.path.setAttribute("d",d); b.classList.toggle("empty",!d);
+    b.setAttribute("aria-pressed",String(p===selSlot));
+    b.classList.toggle("src",!!(has&&bankSrc&&beatIdx===BANKSLOT&&bankSrc.bank===selBank&&bankSrc.slot===p));
+    b.setAttribute("aria-label",`Pattern ${p+1} (PTN${p})${d?"":", empty"}`); b.title=`Pattern ${p+1}, PTN${p} in the file. Double-click to load.`;
+  });
+  document.getElementById("slotName").textContent=`Pattern ${selSlot+1}`;
+  document.querySelectorAll("#slotTracks button").forEach(b=>b.setAttribute("aria-pressed",String(trackPick[b.dataset.k])));
+  const none=!picked().length;
+  document.getElementById("slotLoad").disabled=none; document.getElementById("slotSave").disabled=none;
+  document.getElementById("slotUndo").hidden=!undoSave;
+  document.getElementById("bankDl").disabled=!has; document.getElementById("bankZip").disabled=!banks.size;
+  document.getElementById("bankStatus").textContent=has?`· Bank ${selBank+1}, saves as ${bankFile(selBank)}`:"";
+}
+LANES.forEach(L=>{ const b=document.createElement("button"); b.type="button"; b.dataset.k=L.key; b.textContent=L.name;
+  b.addEventListener("click",()=>{ trackPick[L.key]=!trackPick[L.key]; drawBanks(); }); document.getElementById("slotTracks").appendChild(b); });
+
+// Load: all six tracks makes the grid this pattern (Save writes it back). Fewer tracks copy into whatever is on the grid.
+function loadSlot(){
+  if(selBank===null) return;
+  const lanes=slotLanes(selBank,selSlot), ks=picked();
+  if(ks.length===LANES.length) loadBeat(BANKSLOT,{bank:selBank,slot:selSlot,lanes});
+  else { for(const k of ks) data[k].splice(0,data[k].length,...lanes[k]); if(beatIdx===CUSTOM) saveCustom(); else edited=true; }
+  setViewBar(0); target=computeTargets(); shown=cloneT(target); drawBeats(); drawBar(); drawBanks();
+  bankMsg(ks.length===LANES.length?`Pattern ${selSlot+1} is on the grid. Edit it, then Save grid here to write it back.`:`Loaded ${andList(ks.map(k=>LANES.find(L=>L.key===k).name))} from pattern ${selSlot+1} into the grid.`);
+}
+function saveSlot(){
+  if(selBank===null) return;
+  const b=banks.get(selBank), ks=picked();
+  undoSave={bank:selBank,slot:selSlot,lanes:Object.fromEntries(ks.map(k=>[k,b[k][selSlot].slice()]))};
+  for(const k of ks) b[k][selSlot]=data[k].slice();
+  if(beatIdx===BANKSLOT&&bankSrc.bank===selBank&&bankSrc.slot===selSlot&&ks.length===LANES.length) edited=false;
+  saveBanks(); drawBeats(); drawBanks();
+  bankMsg(`Saved ${ks.length===LANES.length?"the grid":andList(ks.map(k=>LANES.find(L=>L.key===k).name))} to Bank ${selBank+1}, pattern ${selSlot+1}. Download the bank to put it on the card.`);
+}
+document.getElementById("slotLoad").addEventListener("click",loadSlot);
+document.getElementById("slotSave").addEventListener("click",saveSlot);
+document.getElementById("slotUndo").addEventListener("click",()=>{
+  if(!undoSave||!banks.has(undoSave.bank)) return;
+  const {bank,slot,lanes}=undoSave; for(const k in lanes) banks.get(bank)[k][slot]=lanes[k];
+  undoSave=null; saveBanks(); drawBanks(); bankMsg(`Pattern ${slot+1} is back as it was.`);
+});
+const bankFileIn=document.getElementById("bankFile");
+document.getElementById("bankImport").addEventListener("click",()=>bankFileIn.click());
+bankFileIn.addEventListener("change",async()=>{
+  const files=[...bankFileIn.files]; bankFileIn.value="";
+  const done=[], bad=[];
+  for(const f of files){
+    try{
+      const {bank,problems}=parseBank(await f.text()), m=f.name.match(/PatternBank(\d{1,3})/i);
+      let n=m?+m[1]:firstFree();
+      if(n===null||n>=MAX_BANKS){ bad.push(`${f.name}: no free bank number`); continue; }
+      banks.set(n,bank); selBank=n; done.push(`Bank ${n+1}`);
+      if(problems.length) bad.push(`${f.name}: ${problems.slice(0,3).join("; ")}${problems.length>3?` and ${problems.length-3} more`:""}`);
+    }catch(e){ bad.push(`${f.name}: not a PatternBank file (${e.message})`); }
+  }
+  undoSave=null; saveBanks(); drawBanks();
+  bankMsg([done.length?`Imported ${andList(done)}.`:"",...bad].filter(Boolean).join(" "),bad.length>0);
+});
+document.getElementById("bankNew").addEventListener("click",()=>{
+  const n=firstFree(); if(n===null) return bankMsg("All 64 bank numbers are in use.",true);
+  banks.set(n,emptyBank()); selBank=n; selSlot=0; undoSave=null; saveBanks(); drawBanks();
+  bankMsg(`New empty Bank ${n+1}. It saves as ${bankFile(n)}.`);
+});
+document.getElementById("bankDl").addEventListener("click",()=>{
+  if(selBank===null) return;
+  download(bankFile(selBank),new Blob([writeBank(banks.get(selBank))],{type:"text/plain"}));
+});
+document.getElementById("bankZip").addEventListener("click",()=>{
+  if(!banks.size) return;
+  download("stolperbeats-pattern-banks.zip",zip([...banks.keys()].sort((a,b)=>a-b).map(n=>[bankFile(n),writeBank(banks.get(n))])));
+});
 
 // ---------- audio: exact step times on the audio clock; changes apply from the next bar ----------
 let ctx=null, OUT=null, noiseBuf=null, playing=false, timer=null, raf=null, cur=null, evI=0, bars=[], openHat=null;
@@ -1424,8 +1665,8 @@ function gridMidi(){
   return {bytes:new Uint8Array([0x4d,0x54,0x68,0x64,0,0,0,6,0,0,0,1,(PPQ>>8)&255,PPQ&255, 0x4d,0x54,0x72,0x6b,...u32(trk.length),...trk]),name,hits:ev.length};
 }
 function midiName(){
-  const t=state.timing==="DRAFT"?(draft.name||"UNTITLED"):state.timing, beatName=beatIdx===CUSTOM?"your beat":BEATS[beatIdx].name;
-  return state.straight?`${beatName}, straight, ${state.bpm} bpm`:`${beatName}, ${t} ${state.shuffle}, ${FEELS[state.feel].key}${LINEARS[state.linear].chains?", Linear":""}, ${state.bpm} bpm`;
+  const t=state.timing==="DRAFT"?(draft.name||"UNTITLED"):state.timing;
+  return state.straight?`${beatName()}, straight, ${state.bpm} bpm`:`${beatName()}, ${t} ${state.shuffle}, ${FEELS[state.feel].key}${LINEARS[state.linear].chains?", Linear":""}, ${state.bpm} bpm`;
 }
 document.getElementById("dlMidi").addEventListener("click",()=>{
   const {bytes,name}=gridMidi(), a=document.createElement("a");
@@ -1840,7 +2081,7 @@ function setCreator(on){
 modeBtns.forEach(b=>b.addEventListener("click",()=>setCreator(b.dataset.mode==="1")));
 buildFrom(); syncDraft();
 
-drawKits(); drawFeels(); drawBeats(); update();
+drawKits(); drawFeels(); drawBeats(); drawBanks(); update();
 </script>
 </body>
 </html>
