@@ -252,7 +252,9 @@ main{padding-top:14px}
 .follow input{margin:0;accent-color:var(--accent)}
 .barnote{font-size:12px;color:var(--muted)}
 /* Pattern banks: bank chips, the 24 pattern slots with mini maps, and the load/save bar */
+#bankCard .bankbody{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 #bankCard .barhead{margin-bottom:8px}
+#bankCard .barhead .status{margin-left:0}
 .bankrow{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin-bottom:8px}
 .bchip{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:999px;padding:2px 10px;font:inherit;font-size:12px;cursor:pointer;font-variant-numeric:tabular-nums}
 .bchip[aria-pressed=true]{background:var(--text);border-color:var(--text);color:var(--panel)}
@@ -434,8 +436,10 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
     <p class="hint">Click anywhere to place a hit on the nearest step, or hold and drag to draw several. Start on a hit to erase instead. Use the M button beside a track to mute it. Pick a Bar tab to write Kick and Snare in bars 2 to 4.</p>
   </section>
 
-  <section class="card" id="bankCard">
-    <div class="barhead"><h2>Pattern banks</h2><span class="status" id="bankStatus"></span>
+  <details class="card sources" id="bankCard">
+    <summary><span class="chev" aria-hidden="true"></span><span><b>Pattern banks</b> <span class="sum-sub">· program the module's banks and load them through its SD card</span></span></summary>
+    <div class="bankbody">
+    <div class="barhead"><span class="status" id="bankStatus"></span>
       <div class="barctl">
         <button class="dl" id="bankImport" title="Open PatternBank files from your Stolperbeats SD card. You can pick several at once.">Import from SD</button>
         <button class="dl" id="bankNew" title="Start an empty bank on the first free bank number">New bank</button>
@@ -466,7 +470,8 @@ body:not(.creating) #creatorrow,body.creating #timingrow{display:none}
       </ol>
       <p>Each file holds 24 patterns per track: Kick and Snare 4 bars each, the hats and percs 1 bar. The files store hits only, no accents or velocity. Banks you import or build here are kept in this browser until you remove them.</p>
     </details>
-  </section>
+    </div>
+  </details>
 
   <section class="card" id="halfCard">
     <div class="halfhead"><h2 id="halfTitle">Half a bar up close: the firmware's 8-step cycle</h2><span class="halfsub">Use this section to shape the grid above: drag the steps and the bar follows.</span></div>

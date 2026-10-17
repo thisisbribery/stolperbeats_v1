@@ -99,7 +99,7 @@ The manual's Pattern Edit lengths: Kick and Snare are 4 x 16 = 64 steps, Hihat 1
 
 ## Pattern banks
 
-Program the module's pattern banks here and load them through its SD card.
+Program the module's pattern banks here and load them through its SD card. The **Pattern banks** panel under the grid starts closed; click it to open.
 
 - **Import from SD** opens one or more `PatternBankNNN.txt` files. `PatternBank000.txt` is Bank 1. The bank number comes from the file name.
 - **Bank chips** pick the bank. **File** renumbers it, **Remove** drops it from the browser.
