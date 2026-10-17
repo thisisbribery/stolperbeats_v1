@@ -141,6 +141,31 @@ Kick and Snare hold four 16-step bars separated by `, `. The others hold one. `1
 4. Put the card back and power on.
 5. A bank number the module hasn't used yet starts switched off. Hold either Bank button for 2 seconds, turn the Kick encoder to the bank and click to switch it on.
 
+## Firmware lab
+
+Build your own experimental Stolperbeats firmware, then flash it, all in the page. The **Firmware lab** panel near the bottom starts closed.
+
+This repo and page never contain firmware. You download the official file from [Making Sound Machines](https://makingsoundmachines.com/firmware/), the page changes it in your browser, and hands it back. For personal, educational experiments only.
+
+1. **Open the .bin** (or drop it on the panel). The page checks it's an STM32 image, then finds the four Timing tables and the ticks-per-beat table by their factory values, never by fixed addresses. If anything doesn't match exactly once, it stops and changes nothing. Start from an unmodified official file.
+2. **Pick your mods.** Each Timing button (Trip, Shake, Push, Clave) gets a menu: Factory, another factory table, a style from this page (HOPP, DEEP, SQEZ, CLSTR, FOLD), or your own Timings from the CREATOR. **Hear it** plays the pick in the visualiser. A pick that breaks the module's rules is marked in orange and can't be built.
+3. **Build** downloads the new file, named for what changed (e.g. `..._hw_rev4-163-mod-PushDEEP-ClaveSQEZ.bin`), with a list of every byte range changed and its SHA-256.
+4. **Flash** over USB in Chrome or Edge: hold BOOT, press and release RESET, let go of BOOT, then **Connect** and **Flash my build**. The page erases only the sectors it needs, writes, reads everything back to check it byte for byte, then restarts the module. **Flash official file** puts the original back. Elsewhere, use `dfu-util` as the manual describes.
+
+The STM32 bootloader lives in the chip's ROM, so a bad flash can always be undone by flashing the official file again.
+
+**Recipes.** Save recipe writes a small `.json` of your picks (and the rows of any of your own Timings), with no firmware in it. Anyone can open it with their own official file and build the same firmware. Share recipes, not `.bin` files.
+
+**What's been checked.** The table layout matches firmware 163 as read for this page, and table swaps of this kind ran on a real module in test builds 164 to 166. The flasher itself is tested against synthetic images and a simulated bootloader. Opening your official file is the real check: if it says "Found the four Timing tables", the layout matches.
+
+### Adding a mod
+
+Mods live in `fwPatches()` in `index.html`. A mod is a list of byte writes. The rules:
+
+- Find what you change by its known content, and require exactly one match. Never hard-code an address.
+- Keep the module's own rules (for Timings: whole ticks, 16 to 36 ticks per beat in steps of 4, the half bar adds up to 2N). Check them before building, and throw if they fail.
+- Never add firmware bytes to the repo. Values you search for should be small and documented, like the timing tables.
+
 ## Linear
 
 From the module, next to the grid. When tracks clash on a step only the highest priority one plays: Snare beats Kick, both beat the hats and percs, open hat beats closed, Perc 2 beats Perc 1. Hats and percs don't silence each other. Silenced hits show as dashed outlines.
@@ -158,7 +183,7 @@ It's disabled for the four factory Timings. No firmware, addresses or patching s
 
 ## Download MIDI
 
-The **Download MIDI** button above the grid saves all 4 bars exactly as they play: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums on channel 10 (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat, so hits are placed to within 1/960 of a beat. The file name says what it is, e.g. `stolperbeats-Boom-bap-SQEZ-5-Tight-90-bpm.mid`.
+The **Download MIDI** button above the grid saves all 4 bars exactly as they play, swing and all, so the groove survives in Ableton or any DAW even on a straight grid: every hit where the grid shows it, with the Timing, Shuffle, Feel, Rolls and Stut, accents as velocity, at the current tempo. Muted tracks and hits Linear silences are left out. It's four bars of GM drums on channel 10 (Kick 36, Snare 38, Hihat 1 42, Hihat 2 46, Perc 1 39, Perc 2 63) at 960 ticks per beat, so hits are placed to within 1/960 of a beat. The file name says what it is, e.g. `stolperbeats-Boom-bap-SQEZ-5-Tight-90-bpm.mid`.
 
 ## Creator
 
