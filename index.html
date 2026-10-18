@@ -2283,6 +2283,8 @@ drawKits(); drawFeels(); drawBeats(); drawBanks(); drawModule(); update();
 // the user picked, and hand the file back. Every mod is a list of byte writes, checked before anything is built.
 const FW={base:0x08000000, file:null, name:"", bytes:null, sha:"", ver:"", tables:null, nTable:null, built:null, builtName:"", recipeCustom:{}};
 const SLOTS=["Trip","Shake","Push","Clave"];
+// SHA-256 of official files checked here (a hash, not firmware), so the page can say "this is the official file".
+const KNOWN_OFFICIAL={"c04df924138322ad4ab6ee900fe596eb8e9e037da0454278865fb9a474befa34":"163"};
 const fwSel={Trip:"Factory",Shake:"Factory",Push:"Factory",Clave:"Factory"};
 const hex=n=>"0x"+n.toString(16).toUpperCase().padStart(8,"0");
 const sha256=async b=>[...new Uint8Array(await crypto.subtle.digest("SHA-256",b))].map(x=>x.toString(16).padStart(2,"0")).join("");
@@ -2307,7 +2309,7 @@ function analyseFirmware(b){
   for(const w of [1,2,4]){ const hits=SLOTS.map(t=>findSeq(b,factoryFlat(t),w)); if(hits.some(h=>h.length)){ width=w; SLOTS.forEach((t,i)=>tables[t]=hits[i]); break; } }
   if(!width){ r.problems.push("the four factory Timing tables aren't in it. Start from an unmodified official file"); return r; }
   for(const t of SLOTS){
-    if(tables[t].length!==1){ r.problems.push(tables[t].length?`the ${t} table appears ${tables[t].length} times, so it's not safe to change`:`the ${t} table isn't in it (already modified?)`); continue; }
+    if(tables[t].length!==1){ r.problems.push(tables[t].length?`the ${t} table appears ${tables[t].length} times, so it's not safe to change`:`the factory ${t} table isn't in it, so it looks already modified. Start from the official file`); continue; }
     tables[t]=tables[t][0];
   }
   if(r.problems.length) return r;
@@ -2352,10 +2354,10 @@ function fwPatches(){
   return out;
 }
 function fwBuild(){
-  const ps=fwPatches(), b=FW.bytes.slice(); let changed=0; const ranges=[];
-  for(const x of ps){ if(b[x.o]!==x.v){ b[x.o]=x.v; changed++; const last=ranges[ranges.length-1];
-    if(last&&last.why===x.why&&x.o<=last.end+1) last.end=x.o; else ranges.push({start:x.o,end:x.o,why:x.why}); } }
-  return {b,changed,ranges};
+  const ps=fwPatches(), b=FW.bytes.slice(); let changed=0; const by=new Map(); // one line per table row that changed
+  for(const x of ps){ if(b[x.o]!==x.v){ b[x.o]=x.v; changed++; const g=by.get(x.why)||{start:x.o,end:x.o,why:x.why,n:0};
+    g.start=Math.min(g.start,x.o); g.end=Math.max(g.end,x.o); g.n++; by.set(x.why,g); } }
+  return {b,changed,ranges:[...by.values()].sort((p,q)=>p.start-q.start)};
 }
 // e.g. "PushDEEP-ClaveSQEZ": which buttons changed, and to what
 const recipeCode=()=>SLOTS.filter(s=>fwSel[s]!=="Factory").map(s=>s+fwSel[s].replace(/^Factory /,"")).join("-")||"factory";
@@ -2403,7 +2405,8 @@ async function openFirmware(f){
   FW.built=null; fwOut.innerHTML="";
   if(!r.ok){ FW.bytes=null; FW.tables=null; fwMsg(fwInfo,`${f.name}: ${r.problems[0]}. Nothing was changed.`,true); drawFw(); return; }
   Object.assign(FW,{file:f,name:f.name,bytes:b,tables:r.tables,nTable:r.nTable,width:r.width,ver:(f.name.match(/-(\d+)\.bin$/i)||[])[1]||"",sha:await sha256(b)});
-  fwInfo.innerHTML=`<span class="ok">✓</span> <b>${f.name}</b>, ${(b.length/1024).toFixed(0)} KB${FW.ver?`, version ${FW.ver}`:""}. `+
+  const official=KNOWN_OFFICIAL[FW.sha];
+  fwInfo.innerHTML=`<span class="ok">✓</span> <b>${f.name}</b>, ${(b.length/1024).toFixed(0)} KB${FW.ver?`, version ${FW.ver}`:""}${official?`, <span class="ok">matches the official ${official} release</span>`:""}. `+
     `Found the four Timing tables (${SLOTS.map(t=>`${t} ${hex(FW.base+r.tables[t])}`).join(", ")}) and the ticks-per-beat table (${hex(FW.base+r.nTable.o)}, ${r.nTable.len} entries). `+
     `SHA-256 <span class="mono">${FW.sha.slice(0,16)}…</span>`+(r.notes.length?` <span class="bad">${r.notes.join(" ")}</span>`:"");
   drawFw();
@@ -2421,7 +2424,7 @@ document.getElementById("fwBuild").addEventListener("click",()=>{
     FW.built=b; FW.builtName=`${FW.name.replace(/\.bin$/i,"")}-mod-${code}.bin`.replace(/^_+/,"");
     download(FW.builtName,new Blob([b],{type:"application/octet-stream"}));
     sha256(b).then(h=>{ FW.builtSha=h; fwOut.innerHTML=`<span class="ok">✓</span> Built <b>${FW.builtName}</b>: ${changed} bytes changed in ${ranges.length} place${ranges.length>1?"s":""}. SHA-256 <span class="mono">${h.slice(0,16)}…</span>`+
-      `<pre class="fwlog">${ranges.map(x=>`${hex(FW.base+x.start)}  ${x.end-x.start+1} bytes  ${x.why}`).join("\n")}</pre>`; drawFw(); });
+      `<pre class="fwlog">${ranges.map(x=>`${hex(FW.base+x.start)}  ${String(x.n).padStart(2)} byte${x.n>1?"s":" "}  ${x.why}`).join("\n")}</pre>`; drawFw(); });
   }catch(err){ fwMsg(fwOut,`Not built: ${err.message}.`,true); }
 });
 // Recipes: the picks plus any of your own timings' rows, so someone else can rebuild the same firmware from their own file

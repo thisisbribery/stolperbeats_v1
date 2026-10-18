@@ -156,7 +156,7 @@ The STM32 bootloader lives in the chip's ROM, so a bad flash can always be undon
 
 **Recipes.** Save recipe writes a small `.json` of your picks (and the rows of any of your own Timings), with no firmware in it. Anyone can open it with their own official file and build the same firmware. Share recipes, not `.bin` files.
 
-**What's been checked.** The table layout matches firmware 163 as read for this page, and table swaps of this kind ran on a real module in test builds 164 to 166. The flasher itself is tested against synthetic images and a simulated bootloader. Opening your official file is the real check: if it says "Found the four Timing tables", the layout matches.
+**What's been checked.** Opened on the official 163 file (SHA-256 `c04df924…`), the lab finds every table, and building Push = DEEP with Clave = SQEZ gives a file byte for byte identical to test build 166, which ran on a real module. The USB flashing is tested against a simulated bootloader; flashing a real module from the page hasn't been tried yet.
 
 ### Adding a mod
 
