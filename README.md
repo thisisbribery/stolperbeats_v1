@@ -1,6 +1,6 @@
 # Stolperbeats Visualiser
 
-> **Moved to v2.** New work happens in [stolperbeats_v2](https://github.com/thisisbribery/stolperbeats_v2), focused on the Stolperbeats module only. This repo stays up as it is, with the Deluge styles and proposed extras.
+> **Moved to v2.** New work happens in [stolperbeats_v2](https://github.com/thisisbribery/stolperbeats_v2), focused on the Stolperbeats module only. This repo stays up as it is, with the Deluge styles and proposed extras. The live visualiser is now at [thisisbribery.com/stolperbeats/visualiser](https://www.thisisbribery.com/stolperbeats/visualiser/).
 
 This is a visualiser and emulator of the MSM Stolperbeats module. I made this to help my eyes understand what my ears were hearing, and also to experiment with hypothetical "alt timings" that may be able to be added to the firmware at some stage. I built this for educational purposes only.
 
